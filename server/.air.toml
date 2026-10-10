@@ -1,0 +1,19 @@
+# 可选：Go 热重载配置（需要本地安装 air: go install github.com/air-verse/air@latest）
+# dev.bat / dev.sh 检测到 air 会自动用它，没装则回退到 go run
+root = "."
+tmp_dir = ".air.tmp"
+
+[build]
+  # 输出统一带 .exe：Linux/macOS 不认扩展名，Windows 必须有，两边都能跑
+  cmd = "go build -o .air.tmp/kanban-dev.exe ."
+  bin = ".air.tmp/kanban-dev.exe -dev -addr 127.0.0.1:8090 -data ../.dev"
+  include_ext = ["go", "sql"]
+  exclude_dir = ["../web", "../.dev", ".air.tmp", "../data"]
+  exclude_regex = ["_test\\.go"]
+  delay = 600
+  stop_on_error = true
+  send_interrupt = true
+  kill_delay = 800
+
+[misc]
+  clean_on_exit = true

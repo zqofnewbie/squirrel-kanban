@@ -1,0 +1,19 @@
+services:
+  kanban:
+    build: .
+    image: kanban:latest
+    container_name: kanban
+    restart: unless-stopped
+    ports:
+      # 只映射到本机，配合反代或 SSH 隧道访问；需要局域网访问时改成 "8080:8080"
+      - "127.0.0.1:8080:8080"
+    volumes:
+      # 数据库与附件都在这一个目录里，备份就是拷贝它
+      - ./data:/data
+    environment:
+      TZ: Asia/Shanghai
+      KANBAN_ADDR: ":8080"
+      KANBAN_DATA: "/data"
+      # 首次启动自动创建超级管理员；之后想改请在「用户管理」里操作
+      KANBAN_ADMIN_USER: admin
+      KANBAN_ADMIN_PASS: admin

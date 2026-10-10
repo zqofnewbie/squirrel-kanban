@@ -1,0 +1,9 @@
+data/
+.dev/
+.run/
+server/.air.tmp/
+server/kanban.exe
+server/static/assets/
+server/static/index.html
+node_modules/
+*.log

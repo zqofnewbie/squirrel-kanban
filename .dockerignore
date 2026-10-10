@@ -1,0 +1,9 @@
+.git
+.run
+data
+**/node_modules
+**/dist
+server/kanban.exe
+server/static/assets
+server/static/index.html
+*.log
