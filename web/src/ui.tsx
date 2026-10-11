@@ -458,6 +458,13 @@ export function formatDate(iso?: string) {
   return new Intl.DateTimeFormat(locale(), { month: 'short', day: 'numeric' }).format(d)
 }
 
+export function formatDateTime(iso?: string) {
+  if (!iso) return '—'
+  const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(iso) ? iso.replace(' ', 'T') + 'Z' : iso
+  const date = new Date(normalized)
+  return isNaN(date.getTime()) ? iso : new Intl.DateTimeFormat(locale(), { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(date)
+}
+
 export function dueState(iso?: string): 'none' | 'soon' | 'over' | 'today' {
   if (!iso) return 'none'
   const today = new Date()

@@ -14,6 +14,8 @@ type Workspace struct {
 	BoardCount  int    `json:"board_count"`
 	OwnerID     int64  `json:"owner_id"`
 	CanManage   bool   `json:"can_manage"`
+	CreatedAt   string `json:"created_at"`
+	CreatorName string `json:"creator_name"`
 }
 
 func (s *Store) migrateWorkspaces() error {
@@ -67,6 +69,7 @@ func (s *Store) migrateWorkspaces() error {
 		return err
 	}
 	ownerExists := false
+	creatorExists := false
 	for rows.Next() {
 		var cid, nn, pk int
 		var name, kind string
@@ -75,6 +78,9 @@ func (s *Store) migrateWorkspaces() error {
 			rows.Close()
 			return err
 		}
+		if name == "creator_name" {
+			creatorExists = true
+		}
 		if name == "owner_id" {
 			ownerExists = true
 		}
@@ -82,6 +88,14 @@ func (s *Store) migrateWorkspaces() error {
 	rows.Close()
 	if !ownerExists {
 		if _, err = tx.Exec("ALTER TABLE workspaces ADD COLUMN owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL"); err != nil {
+			return err
+		}
+	}
+	if !creatorExists {
+		if _, err = tx.Exec("ALTER TABLE workspaces ADD COLUMN creator_name TEXT NOT NULL DEFAULT ''"); err != nil {
+			return err
+		}
+		if _, err = tx.Exec("UPDATE workspaces SET creator_name=COALESCE((SELECT display_name FROM users WHERE id=workspaces.owner_id),'')"); err != nil {
 			return err
 		}
 	}
@@ -163,7 +177,7 @@ func (s *Server) workspaceRoutes(mux *http.ServeMux) {
 func (s *Server) handleWorkspaces(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		u := currentUser(r)
-		rows, err := s.store.db.Query(`SELECT w.id,w.name,w.description,COALESCE(w.owner_id,0),(SELECT COUNT(*) FROM boards b WHERE b.workspace_id=w.id AND b.archived=0) FROM workspaces w WHERE ?='admin' OR w.owner_id=? OR EXISTS(SELECT 1 FROM workspace_members m WHERE m.workspace_id=w.id AND m.user_id=?) ORDER BY w.id`, u.Role, u.ID, u.ID)
+		rows, err := s.store.db.Query(`SELECT w.id,w.name,w.description,COALESCE(w.owner_id,0),w.created_at,w.creator_name,(SELECT COUNT(*) FROM boards b WHERE b.workspace_id=w.id AND b.archived=0) FROM workspaces w WHERE ?='admin' OR w.owner_id=? OR EXISTS(SELECT 1 FROM workspace_members m WHERE m.workspace_id=w.id AND m.user_id=?) ORDER BY w.id`, u.Role, u.ID, u.ID)
 		if err != nil {
 			writeErr(w, 500, "读取工作空间失败")
 			return
@@ -172,7 +186,7 @@ func (s *Server) handleWorkspaces(w http.ResponseWriter, r *http.Request) {
 		out := []Workspace{}
 		for rows.Next() {
 			var item Workspace
-			if err = rows.Scan(&item.ID, &item.Name, &item.Description, &item.OwnerID, &item.BoardCount); err != nil {
+			if err = rows.Scan(&item.ID, &item.Name, &item.Description, &item.OwnerID, &item.CreatedAt, &item.CreatorName, &item.BoardCount); err != nil {
 				writeErr(w, 500, "读取工作空间失败")
 				return
 			}
@@ -243,7 +257,7 @@ func (s *Server) handleWorkspaces(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Name = strings.TrimSpace(req.Name)
 	if r.Method == "POST" {
-		result, err := s.store.db.Exec("INSERT INTO workspaces(name,description,created_at,owner_id) VALUES(?,?,?,?)", req.Name, req.Description, nowISO(), u.ID)
+		result, err := s.store.db.Exec("INSERT INTO workspaces(name,description,created_at,owner_id,creator_name) VALUES(?,?,?,?,?)", req.Name, req.Description, nowISO(), u.ID, u.DisplayName)
 		if err != nil {
 			writeErr(w, 500, "创建空间失败")
 			return
@@ -262,15 +276,17 @@ func (s *Server) handleWorkspaces(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	var ownerID int64
-	s.store.db.QueryRow("SELECT COALESCE(owner_id,0) FROM workspaces WHERE id=?", id).Scan(&ownerID)
-	writeOK(w, Workspace{ID: id, Name: req.Name, Description: req.Description, OwnerID: ownerID, CanManage: u.IsAdmin() || ownerID == u.ID})
+	var createdAt, creatorName string
+	s.store.db.QueryRow("SELECT COALESCE(owner_id,0),created_at,creator_name FROM workspaces WHERE id=?", id).Scan(&ownerID, &createdAt, &creatorName)
+	writeOK(w, Workspace{ID: id, Name: req.Name, Description: req.Description, OwnerID: ownerID, CreatedAt: createdAt, CreatorName: creatorName, CanManage: u.IsAdmin() || ownerID == u.ID})
 }
 
 type ManagedUser struct {
 	User
-	WorkspaceIDs []int64 `json:"workspace_ids"`
-	ManagerID    int64   `json:"manager_id"`
-	ManagerName  string  `json:"manager_name"`
+	WorkspaceIDs      []int64 `json:"workspace_ids"`
+	OwnedWorkspaceIDs []int64 `json:"owned_workspace_ids"`
+	ManagerID         int64   `json:"manager_id"`
+	ManagerName       string  `json:"manager_name"`
 }
 
 func (s *Server) handleUsers(w http.ResponseWriter, r *http.Request) {
@@ -293,19 +309,24 @@ func (s *Server) handleUsers(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 			}
-			item := ManagedUser{User: u, WorkspaceIDs: []int64{}}
+			item := ManagedUser{User: u, WorkspaceIDs: []int64{}, OwnedWorkspaceIDs: []int64{}}
 			if u.Role == "member" {
 				s.store.db.QueryRow("SELECT u.id,u.display_name FROM user_managers m JOIN users u ON u.id=m.manager_id WHERE m.user_id=? AND u.role='workspace_admin'", u.ID).Scan(&item.ManagerID, &item.ManagerName)
 			}
-			rows, e := s.store.db.Query("SELECT workspace_id FROM workspace_members WHERE user_id=? ORDER BY workspace_id", u.ID)
+			rows, e := s.store.db.Query("SELECT workspace_id,0 FROM workspace_members WHERE user_id=? UNION ALL SELECT id,1 FROM workspaces WHERE owner_id=? ORDER BY 1", u.ID, u.ID)
 			if e != nil {
 				writeErr(w, 500, "读取分配失败")
 				return
 			}
 			for rows.Next() {
 				var id int64
-				if rows.Scan(&id) == nil {
-					item.WorkspaceIDs = append(item.WorkspaceIDs, id)
+				var owned bool
+				if rows.Scan(&id, &owned) == nil {
+					if owned {
+						item.OwnedWorkspaceIDs = append(item.OwnedWorkspaceIDs, id)
+					} else {
+						item.WorkspaceIDs = append(item.WorkspaceIDs, id)
+					}
 				}
 			}
 			rows.Close()
@@ -342,13 +363,14 @@ func (s *Server) handleUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Username     string  `json:"username"`
-		DisplayName  string  `json:"display_name"`
-		Password     string  `json:"password"`
-		Role         string  `json:"role"`
-		Disabled     bool    `json:"disabled"`
-		WorkspaceIDs []int64 `json:"workspace_ids"`
-		ManagerID    *int64  `json:"manager_id"`
+		Username          string  `json:"username"`
+		DisplayName       string  `json:"display_name"`
+		Password          string  `json:"password"`
+		Role              string  `json:"role"`
+		Disabled          bool    `json:"disabled"`
+		WorkspaceIDs      []int64 `json:"workspace_ids"`
+		OwnedWorkspaceIDs []int64 `json:"owned_workspace_ids"`
+		ManagerID         *int64  `json:"manager_id"`
 	}
 	if decode(r, &req) != nil {
 		writeErr(w, 400, "请求格式不正确")

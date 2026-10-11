@@ -824,3 +824,5 @@ html[lang="en-US"] .sidebar-search > span { overflow: visible; text-overflow: cl
 .empty-state-compact { gap:8px; padding:16px 8px; font-size:12px; }
 .empty-state > .ui-icon, :is(.archive-empty,.share-empty,.management-empty,.empty-workspace) > .ui-icon { opacity:.42; stroke-width:1.2; flex-shrink:0; }
 .management-empty { display:flex; flex-direction:column; align-items:center; gap:12px; }
+
+.space-card-meta { display:flex; flex-wrap:wrap; gap:6px 16px; margin:14px 0; color:var(--muted); font-size:11px; overflow-wrap:anywhere; }

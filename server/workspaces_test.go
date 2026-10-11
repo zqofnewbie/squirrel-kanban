@@ -333,3 +333,63 @@ func TestFreshInstallAndEnglishBoardDefaults(t *testing.T) {
 		t.Fatal("restart changed board data")
 	}
 }
+
+func TestWorkspaceCreationMetadataAndOwnedMembership(t *testing.T) {
+	s := testStore(t)
+	if err := s.CreateUser("rootmeta", "Root", "root-password", "admin", false); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.CreateUser("ownermeta", "Space creator", "owner-password", "workspace_admin", false); err != nil {
+		t.Fatal(err)
+	}
+	rootSession, _ := s.CreateSession(1, "")
+	ownerSession, _ := s.CreateSession(2, "")
+	root := &http.Cookie{Name: cookieName, Value: rootSession.Token}
+	owner := &http.Cookie{Name: cookieName, Value: ownerSession.Token}
+	srv := &Server{store: s, hub: NewHub(), dataDir: t.TempDir()}
+	h := srv.routes()
+	response := apiCall(t, h, "POST", "/api/workspaces", `{"name":"Owned space"}`, owner)
+	mustStatus(t, response, 200)
+	var space Workspace
+	if err := json.Unmarshal(response.Body.Bytes(), &space); err != nil {
+		t.Fatal(err)
+	}
+	if space.CreatorName != "Space creator" || space.CreatedAt == "" {
+		t.Fatalf("missing creation metadata: %+v", space)
+	}
+	usersResponse := apiCall(t, h, "GET", "/api/users", "", root)
+	mustStatus(t, usersResponse, 200)
+	var users []ManagedUser
+	json.Unmarshal(usersResponse.Body.Bytes(), &users)
+	found := false
+	for _, user := range users {
+		if user.ID == 2 {
+			found = true
+			if len(user.WorkspaceIDs) != 0 || len(user.OwnedWorkspaceIDs) != 1 || user.OwnedWorkspaceIDs[0] != space.ID {
+				t.Fatalf("owned and assigned spaces mixed or missing: %+v", user)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("owner missing")
+	}
+	mustStatus(t, apiCall(t, h, "PATCH", "/api/users/2", `{"role":"workspace_admin","display_name":"Space creator","workspace_ids":[]}`, root), 200)
+	var ownerID int64
+	s.db.QueryRow("SELECT owner_id FROM workspaces WHERE id=?", space.ID).Scan(&ownerID)
+	if ownerID != 2 {
+		t.Fatal("saving assigned spaces removed ownership")
+	}
+	mustStatus(t, apiCall(t, h, "PATCH", "/api/users/2", `{"role":"member","display_name":"Changed name","workspace_ids":[]}`, root), 200)
+	spacesResponse := apiCall(t, h, "GET", "/api/workspaces", "", root)
+	mustStatus(t, spacesResponse, 200)
+	var spaces []Workspace
+	json.Unmarshal(spacesResponse.Body.Bytes(), &spaces)
+	for _, item := range spaces {
+		if item.ID == space.ID && (item.CreatorName != space.CreatorName || item.CreatedAt != space.CreatedAt) {
+			t.Fatalf("role change rewrote creation history: %+v", item)
+		}
+	}
+	if err := s.migrateWorkspaces(); err != nil {
+		t.Fatal(err)
+	}
+}

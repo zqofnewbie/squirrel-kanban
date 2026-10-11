@@ -688,5 +688,10 @@
   "保存归属失败": "Could not save member ownership.",
   "暂无工作空间": "No workspaces yet",
   "未分配工作空间": "No workspace assigned",
-  "还没有成员": "No members yet"
+  "还没有成员": "No members yet",
+  "创建人：{0}": "Created by: {0}",
+  "创建时间：{0}": "Created: {0}",
+  "自主创建：{0}": "Owned: {0}",
+  "系统": "System",
+  "未知": "Unknown"
 }
