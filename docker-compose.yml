@@ -1,6 +1,9 @@
 services:
   kanban:
-    build: .
+    build:
+      context: .
+      args:
+        GOPROXY: ${KANBAN_GOPROXY:-https://proxy.golang.org,direct}
     image: squirrel-kanban:latest
     restart: unless-stopped
     read_only: true

@@ -94,6 +94,16 @@ docker compose down                # 停止，保留数据卷
 docker volume inspect squirrel-kanban-data --format '{{ .Mountpoint }}'
 ```
 
+### Go 依赖下载超时
+
+如果构建时访问 `proxy.golang.org` 超时，在已有 `.env` 中添加或修改：
+
+```dotenv
+KANBAN_GOPROXY=https://goproxy.cn,direct
+```
+
+然后重新执行 `docker compose up -d --build --wait`。此变量通过 Compose 的构建参数传入 Go 构建阶段，默认仍使用官方代理；也可指定自己的模块代理。保留 `go.sum`、默认校验数据库及 `go mod verify` 校验，不需要关闭 `GOSUMDB`。逗号分隔的 `direct` 仅在代理返回 404/410 时回退，不会在网络超时时回退。
+
 ### 可选 Office 预览
 
 ```sh

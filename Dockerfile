@@ -8,6 +8,7 @@ RUN npm run build
 
 # ---------- 2. 编译后端（纯 Go，无 CGO） ----------
 FROM golang:1.27.2-alpine AS server
+ARG GOPROXY=https://proxy.golang.org,direct
 WORKDIR /src
 COPY server/go.mod server/go.sum ./
 RUN go mod download && go mod verify

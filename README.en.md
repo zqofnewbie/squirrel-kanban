@@ -94,6 +94,16 @@ The named volume is mounted at `/data` inside the container, not `./data` in the
 docker volume inspect squirrel-kanban-data --format '{{ .Mountpoint }}'
 ```
 
+### Go dependency download timeouts
+
+If `proxy.golang.org` times out during the build, add or update this entry in your existing `.env`:
+
+```dotenv
+KANBAN_GOPROXY=https://goproxy.cn,direct
+```
+
+Run `docker compose up -d --build --wait` again. Compose passes this value to the Go build stage as a build argument; the default remains the official proxy. You may also use your own module proxy. Keep `go.sum`, the default checksum database and `go mod verify` enabled; disabling `GOSUMDB` is unnecessary. The comma-separated `direct` fallback applies only to HTTP 404/410, not network timeouts.
+
 ### Optional Office previews
 
 ```sh
