@@ -72,7 +72,9 @@ docker compose config -q
 docker compose up -d --build --wait
 ```
 
-Open **http://127.0.0.1:8080**. The host port is bound to loopback by default. For public access, use an HTTPS reverse proxy and set `KANBAN_COOKIE_SECURE=true`. Keep it `false` for local HTTP. Preserve Host and overwrite client-supplied forwarding headers at the proxy.
+`docker compose config -q` validates configuration and environment variables without starting containers; success produces no output. `docker compose up -d --build --wait` builds the image, starts the service in the background and waits for its health check to pass. Run these commands from the project root.
+
+The host port binds to **0.0.0.0:8080**. Open **http://SERVER_IP:8080** (or http://127.0.0.1:8080 locally). Allow TCP 8080 from the intended sources in the server firewall and cloud security group. For public access, use an HTTPS reverse proxy and set `KANBAN_COOKIE_SECURE=true`. Keep it `false` for local HTTP. Preserve Host and overwrite client-supplied forwarding headers at the proxy.
 
 The runtime image contains neither Node nor compilers. It runs as UID/GID `10001`, with a read-only root filesystem, dropped capabilities, a writable data volume and bounded temporary storage. `/healthz` checks the service and database connection. Fresh production initialization rejects missing or short passwords; environment changes do not reset existing accounts.
 
@@ -83,6 +85,12 @@ docker compose down                # stop, retain the volume
 ```
 
 SQLite, attachments and backgrounds persist in **`squirrel-kanban-data`**. Do not run `docker compose down -v` when data must be retained. Separate deployments must use different host ports and volumes; never share a SQLite data directory between instances.
+
+The named volume is mounted at `/data` inside the container, not `./data` in the project. On standard Linux Docker installations its usual location is `/var/lib/docker/volumes/squirrel-kanban-data/_data`. Run the following after the first startup creates the volume to find the actual path; Docker Desktop stores it inside its virtual machine:
+
+```sh
+docker volume inspect squirrel-kanban-data --format '{{ .Mountpoint }}'
+```
 
 ### Optional Office previews
 

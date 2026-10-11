@@ -72,7 +72,9 @@ docker compose config -q
 docker compose up -d --build --wait
 ```
 
-默认访问 **http://127.0.0.1:8080**，仅映射本机端口。对外部署使用 HTTPS 反向代理，并设置 `KANBAN_COOKIE_SECURE=true`；本机 HTTP 访问保持 `false`。代理保留 Host，并覆盖客户端提供的转发头。
+`docker compose config -q` 校验配置和环境变量，不启动容器；成功时无输出。`docker compose up -d --build --wait` 先构建镜像、后台启动服务，再等待健康检查通过。请在项目根目录执行这些命令。
+
+默认绑定 **0.0.0.0:8080**，通过 **http://服务器IP:8080** 访问（本机可用 http://127.0.0.1:8080）。服务器防火墙和云安全组需允许所需来源访问 TCP 8080。对外部署使用 HTTPS 反向代理，并设置 `KANBAN_COOKIE_SECURE=true`；本机 HTTP 访问保持 `false`。代理保留 Host，并覆盖客户端提供的转发头。
 
 运行镜像不包含 Node 或编译器，使用 UID/GID `10001`，根目录只读，移除 capabilities，仅数据卷和限额临时目录可写。`/healthz` 检查服务和数据库连接。首次生产初始化拒绝默认或过短密码；已有账号不会因环境变量变化被重置。
 
@@ -83,6 +85,12 @@ docker compose down                # 停止，保留数据卷
 ```
 
 数据库、附件、背景图片保存在命名卷 **`squirrel-kanban-data`**。需要保留数据时不要运行 `docker compose down -v`。多实例部署必须使用不同端口和卷，不能共享 SQLite 目录。
+
+命名卷挂载到容器的 `/data`，不是项目目录下的 `./data`。普通 Linux Docker 默认位置通常为 `/var/lib/docker/volumes/squirrel-kanban-data/_data`，实际位置以以下命令为准（首次启动创建卷后执行）；Docker Desktop 的数据保存在其虚拟机内：
+
+```sh
+docker volume inspect squirrel-kanban-data --format '{{ .Mountpoint }}'
+```
 
 ### 可选 Office 预览
 
