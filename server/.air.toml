@@ -1,5 +1,5 @@
 # 可选：Go 热重载配置（需要本地安装 air: go install github.com/air-verse/air@latest）
-# dev.bat / dev.sh 检测到 air 会自动用它，没装则回退到 go run
+# dev.bat / dev.sh 检测到 air 会自动用它，没装则编译后运行
 root = "."
 tmp_dir = ".air.tmp"
 

@@ -38,6 +38,7 @@ Windows 运行 `dev.bat`。访问 **http://127.0.0.1:5173**。空开发数据库
 
 - 前端 Vite 热更新；后端默认监听 `127.0.0.1:8090`。
 - 安装了 `air` 时使用 Go 热重载，否则修改后端后重启脚本。
+- Mac / Linux 和 Windows 共用同一启动器：端口冲突提前报错，检查两端 HTTP 就绪，`Ctrl+C` 统一停止服务；任一服务退出会清理另一端。
 - 数据保存在 `.dev/`，退出脚本不会删除数据。
 - 始终使用同一主机名访问，`localhost` 和 `127.0.0.1` 的 Cookie 不通用。
 
@@ -47,7 +48,16 @@ API_PORT=9090 WEB_PORT=5174 ./dev.sh
 DEV_DATA_DIR=/tmp/squirrel-test ./dev.sh
 ```
 
-Windows 可在运行脚本前设置相同环境变量。手动启动见 [开发与贡献规范](CONTRIBUTING.md)。
+数据目录使用绝对路径或相对项目根目录的路径，支持空格。Windows 可在运行脚本前设置相同环境变量：
+
+```bat
+set "API_PORT=9090"
+set "WEB_PORT=5174"
+set "DEV_DATA_DIR=D:\Squirrel Data"
+dev.bat
+```
+
+Windows 在一个终端内运行两个服务，使用 `Ctrl+C` 停止，不要只关闭窗口。手动启动见 [开发与贡献规范](CONTRIBUTING.md)。
 
 ## Docker Compose 部署
 

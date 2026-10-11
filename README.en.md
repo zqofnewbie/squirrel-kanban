@@ -38,6 +38,7 @@ On Windows, run `dev.bat`. Open **http://127.0.0.1:5173**. A fresh development d
 
 - Vite provides frontend hot reload; the API listens on `127.0.0.1:8090`.
 - If `air` is installed, Go reloads automatically. Otherwise restart after backend changes.
+- Both platforms use the same supervisor: occupied ports fail early, both HTTP services are checked for readiness, and `Ctrl+C` stops the services. If either service exits, the other is stopped too.
 - Development data lives in `.dev/` and survives restarts.
 - Use the same hostname consistently: `localhost` and `127.0.0.1` do not share cookies.
 
@@ -47,7 +48,16 @@ API_PORT=9090 WEB_PORT=5174 ./dev.sh
 DEV_DATA_DIR=/tmp/squirrel-test ./dev.sh
 ```
 
-On Windows, set the same variables before running the script. See [CONTRIBUTING.md](CONTRIBUTING.md) for checks and contribution rules.
+Data paths can be absolute or relative to the project root, including spaces. On Windows, set the same variables before running the script:
+
+```bat
+set "API_PORT=9090"
+set "WEB_PORT=5174"
+set "DEV_DATA_DIR=D:\Squirrel Data"
+dev.bat
+```
+
+Both services run in one terminal. Use `Ctrl+C` to stop them instead of simply closing the window. See [CONTRIBUTING.md](CONTRIBUTING.md) for checks and contribution rules.
 
 ## Docker Compose deployment
 

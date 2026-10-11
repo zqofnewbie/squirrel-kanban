@@ -4,6 +4,8 @@
 
 开发环境和启动步骤见 README（中文）或 README.en.md（English）。
 
+`dev.sh` / `dev.bat` 仅作为入口，共用 `scripts/dev.mjs`。修改启动逻辑后执行 `node --test scripts/dev.test.mjs`；安装 Go 和前端依赖后，以 `DEV_SMOKE=1 node --test scripts/dev.test.mjs` 实测独立端口 / 临时数据、API 代理和退出清理（PowerShell 使用 `$env:DEV_SMOKE="1"`）。Windows 的 Ctrl+C 需在原生终端验证，自动测试覆盖启动和进程树清理；CI 对三种操作系统运行轻量检查。
+
 手动开发启动：`cd server && go run . -dev -addr 127.0.0.1:8090 -data ../.dev`；另开终端执行 `cd web && npm ci && npm run dev`。提交前执行：
 
 ```sh
