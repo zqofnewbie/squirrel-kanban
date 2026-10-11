@@ -2,7 +2,7 @@
 FROM node:22-alpine AS web
 WORKDIR /web
 COPY web/package.json web/package-lock.json ./
-RUN npm ci --no-audit --no-fund
+RUN npm ci --include=optional --no-audit --no-fund
 COPY web/ ./
 RUN npm run build
 
