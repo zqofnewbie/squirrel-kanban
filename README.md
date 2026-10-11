@@ -1,140 +1,142 @@
-# 看板 · Kanban
+# 松鼠看板
 
-一个轻量、好看、交互手感接近板栗看板的自建看板。单容器、单端口、SQLite 单文件存储，Docker Compose 一条命令起来。
+[中文](README.md) · [English](README.en.md)
 
-## 特性
+一个轻量的中英文看板，把想法变成卡片，把计划一步步完成。
 
-- **轻量**：Go 单二进制 + 纯 Go 的 SQLite 驱动（无 CGO），运行镜像约 25MB，常驻内存 15–30MB
-- **零外部依赖**：没有 Redis、Nginx、消息队列，`/data` 一个目录就是全部状态
-- **交互**：跨列拖拽、列表拖拽、就地改标题、连续建卡、乐观更新 + SSE 多端实时同步
-- **卡片**：Markdown 描述、彩色标签、清单进度、截止日期、封面色、附件
-- **账号**：管理员在页面上建号，**不开放注册**；bcrypt 加盐哈希，会话走 HttpOnly Cookie
-- **细节**：暗色模式、命令面板（`Ctrl/Cmd + K`）、筛选、归档箱、WIP 上限
+React + Vite、Go、SQLite。生产环境通过 Docker Compose 部署，默认一个容器、一个端口，不需要外部数据库或 Redis。适合个人计划、小团队任务和按看板分享协作。
 
-## 快速开始
+![开始使用模板 · 浅色看板](docs/screenshots/board-light-zh.jpg)
 
-```bash
-docker compose up -d
-# 打开 http://127.0.0.1:8080
-```
+## 功能
 
-首次启动会按环境变量自动创建超级管理员（默认 `admin` / `admin`），登录后首页会提示先改密码。
+- 多工作空间与三级账号：超级管理员、子管理员、成员；成员管理归属可由超级管理员调整。
+- 看板、列表、卡片拖拽排序；卡片固定、标签、截止日期、封面、Markdown 描述和子任务清单。
+- 评论、附件预览与下载、归档和恢复。图片、PDF、音视频和文本使用浏览器预览；Office 预览服务可选启用。
+- 独立分享管理：固定短链接、实时内容、有效期、停用和独立协作权限；访客免登录访问单个看板。
+- 中文 / 英文界面与浅色 / 深色主题，首次访问跟随浏览器偏好，之后保留用户选择。
+- 看板背景、画布平移和缩放、缩略图、侧栏缩放与折叠、键盘快捷键。
+- 大列表使用虚拟渲染；管理员通过 SSE 同步，分享页在前台每 15 秒检查更新，未变化时不重复传输看板。
 
-> 默认只监听 `127.0.0.1`。要让局域网访问，把 `docker-compose.yml` 里的端口改成 `"8080:8080"`，
-> 并建议在前置反代上再加一层访问控制。
+![模板卡片详情 · 描述与清单](docs/screenshots/card-detail-zh.jpg)
 
-## 配置
+![开始使用模板 · 深色看板](docs/screenshots/board-dark-zh.jpg)
 
-| 环境变量 | 默认值 | 说明 |
-| --- | --- | --- |
-| `KANBAN_ADDR` | `:8080` | 监听地址 |
-| `KANBAN_DATA` | `/data` | 数据目录，存放 `kanban.db` 与 `files/` |
-| `KANBAN_ADMIN_USER` | `admin` | 首次启动时自动创建的超级管理员登录名 |
-| `KANBAN_ADMIN_PASS` | `admin` | 初始密码（仅在首次初始化时生效） |
-| `KANBAN_DEV` | 空 | 设为 `1`/`true` 等同于 `-dev`（请求日志 + 本地 CORS + 首页引导） |
-
-## 备份
-
-数据全部在挂载的 `./data` 目录里：
-
-```bash
-# 在线备份（推荐，不需要停服务）
-docker compose exec kanban sh -c 'sqlite3' # 镜像内未带 sqlite3，用下面的离线方式
-
-# 离线备份：停服务后整个目录拷走即可
-docker compose down
-cp -r data data-backup-$(date +%F)
-docker compose up -d
-```
-
-不停机的一致性备份可以复制 WAL 安全的三件套：
-
-```bash
-docker compose stop kanban
-cp data/kanban.db data/kanban.db-wal data/kanban.db-shm /backup/
-docker compose start kanban
-```
+截图使用新初始化的「开始使用」模板，不含个人看板、成员或分享凭据。模板在超级管理员首次登录时创建一次，可以自由编辑或删除。
 
 ## 本地开发
 
-需要 Go 1.24+ 与 Node 22+。**一条命令起全套**：
+需要 **Go 1.24+、Node.js 22+、npm**；建议使用仍受支持的 Go 版本。项目使用 `package-lock.json`，不混用包管理器。
 
-```bash
-# Windows：双击 dev.bat（或命令行 ./dev.bat）
-# macOS / Linux / Git Bash：
+```sh
+git clone https://gitee.com/storm07106038/kanban.git
+cd kanban
 ./dev.sh
 ```
 
-会开两个进程：后端 Go（`127.0.0.1:8090`）+ 前端 Vite（`127.0.0.1:5173`）。
-浏览器打开 **http://127.0.0.1:5173**，账号 `admin` / `admin`。
+Windows 运行 `dev.bat`。访问 **http://127.0.0.1:5173**。空开发数据库初始账号为 `admin` / `admin`，首次登录要求修改密码，仅供本机开发。
 
-也可以手动分开跑（等价）：
+- 前端 Vite 热更新；后端默认监听 `127.0.0.1:8090`。
+- 安装了 `air` 时使用 Go 热重载，否则修改后端后重启脚本。
+- 数据保存在 `.dev/`，退出脚本不会删除数据。
+- 始终使用同一主机名访问，`localhost` 和 `127.0.0.1` 的 Cookie 不通用。
 
-```bash
-# 后端：-dev 会打开请求日志、放宽本地 CORS、首页显示引导页
-cd server && go run . -dev -addr 127.0.0.1:8090 -data ../.dev
-
-# 前端：/api 与 /files 已代理到 8090
-cd web && npm install && npm run dev
+```sh
+# macOS / Linux：改端口或使用独立测试目录
+API_PORT=9090 WEB_PORT=5174 ./dev.sh
+DEV_DATA_DIR=/tmp/squirrel-test ./dev.sh
 ```
 
-几个约定：
+Windows 可在运行脚本前设置相同环境变量。手动启动见 [开发与贡献规范](CONTRIBUTING.md)。
 
-| 项 | 值 | 原因 |
-| --- | --- | --- |
-| 后端端口 | `8090` | docker 用 8080，dev 错开，避免和你本地已有的服务打架 |
-| 数据目录 | `.dev/` | 与 docker 的 `./data` 隔离；**删掉即重置**，含默认管理员 |
-| 前端地址 | `127.0.0.1:5173` | 固定绑 IPv4。别用 `localhost`——它在浏览器里是另一个 cookie 域，会出现"登录了却提示未登录" |
-| Go 热重载 | air（可选） | 装了 `air` 脚本会自动用它，`server/.air.toml` 已配好；没装就 `go run`，改 Go 代码手动重启 |
+## Docker Compose 部署
 
-改后端端口时两处要同步：`dev.bat` / `dev.sh` 的 `API_PORT`，以及前端的
-`KANBAN_API` 环境变量（`KANBAN_API=http://127.0.0.1:9090 npm run dev`）。
+需要 Docker Engine / Docker Desktop 和 **Compose v2**。
 
-前端 `npm run build` 会直接产出到 `../server/static`，随后 `go build` 时通过 `go:embed` 打进二进制。
+```sh
+cp .env.example .env
+# 编辑 .env，设置 KANBAN_ADMIN_USER 和 KANBAN_ADMIN_PASS
+# 初始密码必须是随机密码，12–72 字节，不可留空
 
-## 目录结构
-
-```
-kanban/
-├── docker-compose.yml
-├── Dockerfile              # 三阶段：node 构建前端 → golang 编译 → alpine 运行
-├── dev.bat / dev.sh        # 本地开发一键启动（后端 + Vite）
-├── server/                 # Go 后端（package main）
-│   ├── main.go             # 启动、路由、SPA 回退、dev 中间件
-│   ├── .air.toml           # 可选：Go 热重载配置
-│   ├── store*.go           # SQLite 访问层
-│   ├── api*.go             # HTTP handlers
-│   ├── auth.go             # bcrypt + 会话中间件
-│   ├── hub.go              # SSE 广播
-│   ├── schema.sql          # 建表（幂等）
-│   └── static/             # 前端构建产物（go:embed）
-└── web/                    # React + Vite + Tailwind
-    └── src/
+docker compose config -q
+docker compose up -d --build --wait
 ```
 
-## 实现要点
+默认访问 **http://127.0.0.1:8080**，仅映射本机端口。对外部署使用 HTTPS 反向代理，并设置 `KANBAN_COOKIE_SECURE=true`；本机 HTTP 访问保持 `false`。代理保留 Host，并覆盖客户端提供的转发头。
 
-- **排序用 REAL 类型的 `position`**，拖拽时取相邻两个位置的中间值，一次拖拽只 UPDATE 一行；
-  浮点精度耗尽时自动重整（也可在看板菜单手动触发「整理序号」）。
-- **SQLite 单写连接** (`SetMaxOpenConns(1)`) + WAL + `busy_timeout`，彻底避免 `database is locked`。
-  注意：不要在遍历 `rows` 的过程中再发起查询，否则会死锁——代码里已全部规避。
-- **实时同步**走 SSE，事件里带 `actor`（会话标识），客户端忽略自己发出的回声，
-  保证乐观更新不会被自己的广播覆盖。
-- **结构类变更**（列/标签增删）直接整块刷新看板，简单可靠；**卡片类变更**走增量合并，拖拽不闪。
+运行镜像不包含 Node 或编译器，使用 UID/GID `10001`，根目录只读，移除 capabilities，仅数据卷和限额临时目录可写。`/healthz` 检查服务和数据库连接。首次生产初始化拒绝默认或过短密码；已有账号不会因环境变量变化被重置。
 
-## API
-
-所有 `/api/*`（除 `POST /api/auth/login`）都要求登录；`/api/users` 的写操作要求管理员角色。
-
+```sh
+docker compose logs -f kanban
+docker compose up -d --build --wait  # 更新，保留数据
+docker compose down                # 停止，保留数据卷
 ```
-POST   /api/auth/login | logout          PATCH /api/auth/password | profile
-GET    /api/users                        POST/PATCH/DELETE /api/users[/:id]   (管理员写)
-GET    /api/boards                       POST  /api/boards
-GET    /api/boards/:id                   PATCH/DELETE /api/boards/:id
-GET    /api/boards/:id/archived          POST  /api/boards/:id/columns | labels | normalize
-POST   /api/columns/:id/cards | move     PATCH/DELETE /api/columns/:id
-GET    /api/cards/:id                    PATCH/DELETE /api/cards/:id
-POST   /api/cards/:id/move | labels | checklists | attachments
-PATCH/DELETE /api/checklists/:id         POST/PATCH/DELETE /api/checklists/:id/items
-DELETE /api/attachments/:id              GET  /api/events (SSE)
+
+数据库、附件、背景图片保存在命名卷 **`squirrel-kanban-data`**。需要保留数据时不要运行 `docker compose down -v`。多实例部署必须使用不同端口和卷，不能共享 SQLite 目录。
+
+### 可选 Office 预览
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.preview.yml up -d --build --wait
 ```
+
+额外启动 Gotenberg / LibreOffice 服务，增加资源消耗，默认不开启。不启用时仍可下载 Office 原文件。
+
+### 备份与迁移
+
+停止写入后备份完整数据目录，包含 SQLite 旁文件、附件及背景图。旧的 `./data` 挂载不会自动迁入命名卷。
+
+详见 [部署、备份与恢复](docs/deployment.md)。
+
+## 账号与分享权限
+
+| 身份 | 权限范围 |
+| --- | --- |
+| 超级管理员 | 全部空间和账号；创建子管理员 / 成员，调整成员管理归属 |
+| 子管理员 | 创建并管理自己的空间，使用分配的空间；只管理归属自己的成员 |
+| 成员 | 操作分配空间内的看板、卡片和分享；不能创建 / 管理空间或管理账号 |
+| 分享访客 | 仅访问链接对应看板；通过独立开关授权协作 |
+
+调整成员归属后旧子管理员立即失去管理权限，新子管理员接管。已有空间访问权限保留；保存账号设置会撤销该账号会话，重新登录后应用更新。
+
+每条分享独立配置 **固定卡片、修改封面、预览与下载附件、评论、勾选清单、移动卡片、编辑内容、新建卡片**。未开启权限即为只读；新建与编辑分享请检查具体开关。访客不能删除 / 归档卡片、上传附件、管理列表 / 标签或访问其他空间与账号。
+
+分享码具有访问权限，按私有凭据处理，不要公开真实链接。修改权限、停用、到期或删除分享后，下一次请求按最新设置校验。内容实时更新，不是快照。
+
+## 快捷键
+
+| 快捷键 | 操作 |
+| --- | --- |
+| `Ctrl/Cmd + K` | 快捷搜索 |
+| `Ctrl/Cmd + B` | 折叠 / 展开侧栏 |
+| `N` / `/` | 新建卡片 / 筛选当前看板 |
+| `Esc` | 关闭弹层、取消编辑或清空筛选 |
+| `Ctrl/Cmd + 滚轮` / 双指捏合 | 缩放画布 |
+| 双指滑动 / `Shift + 滚轮` | 平移画布 / 横向平移 |
+| `空格 + 拖动` / 鼠标中键 | 临时平移 |
+| `H` / `M` | 平移模式 / 缩略图 |
+| `+` / `-` / `0` / `F` | 放大 / 缩小 / 重置 / 适应宽度 |
+
+输入文字或使用中文输入法时不会触发普通单键快捷键。
+
+## 验证与项目规范
+
+```sh
+cd web
+npm ci
+npm test
+npm run build
+cd ../server
+go test ./...
+go vet ./...
+```
+
+[CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [部署检查记录](docs/deployment-review.md)
+
+Git 和 Docker 构建上下文排除运行数据、备份、凭据、依赖目录、构建产物和浏览器诊断记录；可发布的模板截图位于 `docs/screenshots/`。忽略规则不会删除已提交的 Git 历史。
+
+`.github/workflows/ci.yml` 提供 GitHub Actions 测试与容器冒烟流程；当前仓库在 Gitee，该工作流需在 GitHub 镜像启用或改接 Gitee CI。镜像构建与 Office 预览仍需在实际容器环境验证；已知构建工具漏洞及发布待办见部署检查记录。
+
+## 许可证
+
+目前尚未选择项目许可证，不提供商用、修改或再分发的开源授权声明。第三方字体授权见 [OFL.txt](web/public/fonts/OFL.txt) 和 [来源说明](web/public/fonts/SOURCE.md)。正式公开发布前还需完成素材授权与 Git 历史检查。

@@ -51,3 +51,34 @@ func sanitizeFilename(name string) string {
 }
 
 func filesDir(dataDir string) string { return filepath.Join(dataDir, "files") }
+
+// attachmentPaths collects file paths before foreign-key cascades remove their records.
+func (s *Store) attachmentPaths(scope string, id int64) ([]string, error) {
+	filter := map[string]string{"card": "c.id", "column": "col.id", "board": "col.board_id"}[scope]
+	if filter == "" {
+		return nil, ErrNotFound
+	}
+	rows, err := s.db.Query(`SELECT a.path FROM attachments a
+		JOIN cards c ON c.id=a.card_id JOIN board_columns col ON col.id=c.column_id
+		WHERE `+filter+`=?`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	paths := []string{}
+	for rows.Next() {
+		var path string
+		if err := rows.Scan(&path); err != nil {
+			return nil, err
+		}
+		paths = append(paths, path)
+	}
+	return paths, rows.Err()
+}
+
+func (s *Server) removeAttachmentFiles(paths []string) {
+	for _, path := range paths {
+		removeFile(filepath.Join(filesDir(s.dataDir), filepath.Base(path)))
+		removeFile(filepath.Join(s.dataDir, "previews", filepath.Base(path)+".pdf"))
+	}
+}

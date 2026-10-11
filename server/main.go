@@ -9,8 +9,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -21,10 +23,12 @@ var staticFS embed.FS
 
 // Server 持有全部运行时依赖。
 type Server struct {
-	store   *Store
-	hub     *Hub
-	dataDir string
-	dev     bool
+	store      *Store
+	hub        *Hub
+	dataDir    string
+	dev        bool
+	previewURL string
+	soffice    string
 }
 
 func main() {
@@ -42,13 +46,32 @@ func main() {
 	}
 	defer store.Close()
 
+	if err := store.validateBootstrap(*dev); err != nil {
+		log.Fatalf("初始化配置无效: %v", err)
+	}
+
 	if err := store.ensureSeed(); err != nil {
 		log.Fatalf("初始化数据失败: %v", err)
 	}
 	store.PurgeSessions()
 	ensureDir(filesDir(*data))
 
-	srv := &Server{store: store, hub: NewHub(), dataDir: *data, dev: *dev}
+	srv := &Server{store: store, hub: NewHub(), dataDir: *data, dev: *dev, previewURL: os.Getenv("KANBAN_PREVIEW_URL"), soffice: os.Getenv("KANBAN_SOFFICE")}
+	if *dev && srv.previewURL == "" && srv.soffice == "" {
+		srv.soffice, _ = exec.LookPath("soffice")
+		if srv.soffice == "" {
+			candidate := ""
+			if runtime.GOOS == "darwin" {
+				candidate = "/Applications/LibreOffice.app/Contents/MacOS/soffice"
+			}
+			if runtime.GOOS == "windows" {
+				candidate = filepath.Join(os.Getenv("ProgramFiles"), "LibreOffice", "program", "soffice.exe")
+			}
+			if info, err := os.Stat(candidate); err == nil && info.Mode().IsRegular() {
+				srv.soffice = candidate
+			}
+		}
+	}
 	mux := srv.routes()
 
 	var handler http.Handler = mux
@@ -65,7 +88,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("看板已启动 http://%s  (数据目录: %s)", *addr, *data)
+		log.Printf("松鼠看板已启动 http://%s  (数据目录: %s)", *addr, *data)
 		if *dev {
 			log.Printf("开发模式：前端请访问 Vite 开发服务器（默认 http://127.0.0.1:5173）")
 		}
@@ -85,6 +108,20 @@ func main() {
 
 func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		w.Header().Set("Cache-Control", "no-store")
+		if err := s.store.db.PingContext(ctx); err != nil {
+			http.Error(w, "unavailable", 503)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Write([]byte("ok\n"))
+	})
+	mux.HandleFunc("GET /api/", func(w http.ResponseWriter, r *http.Request) {
+		writeErr(w, http.StatusNotFound, "接口不存在，请确认服务已更新")
+	})
 
 	// 认证
 	mux.HandleFunc("POST /api/auth/login", s.handleLogin)
@@ -93,13 +130,13 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("PATCH /api/auth/password", s.withAuth(s.handleChangePassword))
 	mux.HandleFunc("PATCH /api/auth/profile", s.withAuth(s.handleUpdateProfile))
 
-	// 用户管理（仅管理员可写）
-	mux.HandleFunc("GET /api/users", s.withAuth(s.handleListUsers))
-	mux.HandleFunc("POST /api/users", s.withAdmin(s.handleCreateUser))
-	mux.HandleFunc("PATCH /api/users/{id}", s.withAdmin(s.handleUpdateUser))
-	mux.HandleFunc("DELETE /api/users/{id}", s.withAdmin(s.handleDeleteUser))
+	s.workspaceRoutes(mux)
+	s.shareRoutes(mux)
 
 	// 看板
+	mux.HandleFunc("POST /api/boards/{id}/background", s.withAuth(s.handleUploadBackground))
+	mux.HandleFunc("GET /api/boards/{id}/background", s.withAuth(s.handleBoardBackground))
+	mux.HandleFunc("PUT /api/board-order", s.withAuth(s.handleBoardOrder))
 	mux.HandleFunc("GET /api/boards", s.withAuth(s.handleListBoards))
 	mux.HandleFunc("POST /api/boards", s.withAuth(s.handleCreateBoard))
 	mux.HandleFunc("GET /api/boards/{id}", s.withAuth(s.handleGetBoard))
@@ -114,6 +151,7 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("POST /api/columns/{id}/cards", s.withAuth(s.handleCreateCard))
 	mux.HandleFunc("PATCH /api/columns/{id}", s.withAuth(s.handleUpdateColumn))
 	mux.HandleFunc("POST /api/columns/{id}/move", s.withAuth(s.handleMoveColumn))
+	mux.HandleFunc("POST /api/columns/{id}/archive", s.withAuth(s.handleArchiveColumn))
 	mux.HandleFunc("DELETE /api/columns/{id}", s.withAuth(s.handleDeleteColumn))
 
 	// 标签
@@ -138,6 +176,7 @@ func (s *Server) routes() http.Handler {
 	mux.HandleFunc("DELETE /api/items/{id}", s.withAuth(s.handleDeleteChecklistItem))
 
 	// 附件
+	mux.HandleFunc("GET /api/attachments/{id}/preview", s.withAuth(s.handleAttachmentPreview))
 	mux.HandleFunc("DELETE /api/attachments/{id}", s.withAuth(s.handleDeleteAttachment))
 
 	// 实时事件
@@ -149,8 +188,12 @@ func (s *Server) routes() http.Handler {
 		log.Fatalf("静态资源加载失败: %v", err)
 	}
 	fileServer := http.FileServer(http.FS(sub))
-	mux.Handle("GET /files/", http.StripPrefix("/files/",
-		http.FileServer(http.Dir(filesDir(s.dataDir)))))
+	attachmentFiles := http.StripPrefix("/files/", http.FileServer(http.Dir(filesDir(s.dataDir))))
+	mux.HandleFunc("GET /files/", s.withAuth(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Disposition", "attachment")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		attachmentFiles.ServeHTTP(w, r)
+	}))
 	mux.Handle("GET /assets/", fileServer)
 	mux.Handle("GET /favicon.svg", fileServer)
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -228,7 +271,7 @@ func isLocalOrigin(o string) bool {
 func serveDevIndex(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
-	_, _ = w.Write([]byte(`<!doctype html><meta charset="utf-8"><title>看板 · 开发模式</title>
+	_, _ = w.Write([]byte(`<!doctype html><meta charset="utf-8"><title>松鼠看板 · 开发模式</title>
 <style>body{font:14px/1.7 -apple-system,"Segoe UI",system-ui,sans-serif;max-width:640px;margin:10vh auto;padding:0 20px;color:#1f2328}
 code{background:#f2f4f7;padding:2px 6px;border-radius:5px;font-size:13px}
 a{color:#3b6cf6}</style>
@@ -252,4 +295,3 @@ func serveIndex(sub fs.FS, w http.ResponseWriter) {
 	w.Header().Set("Cache-Control", "no-cache")
 	_, _ = w.Write(data)
 }
-

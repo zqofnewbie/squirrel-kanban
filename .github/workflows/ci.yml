@@ -1,0 +1,41 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.2'
+          cache-dependency-path: server/go.sum
+      - run: npm ci && npm test && npm run build
+        working-directory: web
+      - run: go test ./... && go vet ./...
+        working-directory: server
+      - name: Validate Compose and smoke-test image
+        env:
+          KANBAN_ADMIN_PASS: ci-only-initial-password
+        run: |
+          docker compose config -q
+          docker compose -f docker-compose.yml -f docker-compose.preview.yml config -q
+          docker compose up -d --build --wait --wait-timeout 120
+          curl --fail http://127.0.0.1:8080/healthz
+          docker compose exec -T kanban sh -c 'test "$(id -u)" = 10001 && test -w /data && ! touch /usr/local/rootfs-write-test'
+          docker compose exec -T kanban sh -c 'test -s /data/kanban.db && echo smoke > /data/.ci-persistence'
+          docker compose restart kanban
+          docker compose up -d --wait --wait-timeout 120
+          docker compose exec -T kanban sh -c 'test -s /data/kanban.db && test "$(cat /data/.ci-persistence)" = smoke'
+      - name: Cleanup test containers
+        if: always()
+        env:
+          KANBAN_ADMIN_PASS: ci-only-initial-password
+        run: docker compose down -v

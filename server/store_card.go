@@ -30,10 +30,10 @@ func (s *Store) GetCard(id int64) (*Card, error) {
 	var arch int
 	var due, cover string
 	err := s.db.QueryRow(
-		`SELECT id, column_id, title, description, position, COALESCE(due_date,''), cover,
+		`SELECT id, column_id, title, description, position, COALESCE(due_date,''), cover, pinned,
 		        archived, COALESCE(created_by,0), created_at, updated_at
 		 FROM cards WHERE id=?`, id).
-		Scan(&c.ID, &c.ColumnID, &c.Title, &c.Description, &c.Position, &due, &cover,
+		Scan(&c.ID, &c.ColumnID, &c.Title, &c.Description, &c.Position, &due, &cover, &c.Pinned,
 			&arch, &c.CreatedBy, &c.CreatedAt, &c.UpdatedAt)
 	if err != nil {
 		return nil, ErrNotFound
@@ -44,6 +44,8 @@ func (s *Store) GetCard(id int64) (*Card, error) {
 	c.Labels = s.cardLabels(id)
 	c.Checklists = s.cardChecklists(id)
 	c.Attachments = s.cardAttachments(id)
+	c.AttachmentCount = len(c.Attachments)
+	c.CommentCount, _ = s.queryInt("SELECT COUNT(*) FROM card_comments WHERE card_id=?", id)
 	for _, cl := range c.Checklists {
 		c.ChecklistTotal += len(cl.Items)
 		for _, it := range cl.Items {
@@ -80,15 +82,16 @@ func (s *Store) CardSummary(id int64) (*Card, error) {
 	var arch int
 	err := s.db.QueryRow(
 		`SELECT c.id, c.column_id, c.title, c.description, c.position,
-		        COALESCE(c.due_date,''), c.cover, c.archived, c.created_at, c.updated_at,
+		        COALESCE(c.due_date,''), c.cover, c.pinned, c.archived, c.created_at, c.updated_at,
 		        (SELECT COUNT(*) FROM checklist_items i JOIN checklists k ON k.id=i.checklist_id
 		          WHERE k.card_id=c.id) AS total,
 		        (SELECT COUNT(*) FROM checklist_items i JOIN checklists k ON k.id=i.checklist_id
 		          WHERE k.card_id=c.id AND i.done=1) AS done,
-		        (SELECT COUNT(*) FROM attachments a WHERE a.card_id=c.id) AS files
+		        (SELECT COUNT(*) FROM attachments a WHERE a.card_id=c.id),
+ (SELECT COUNT(*) FROM card_comments m WHERE m.card_id=c.id) AS files
 		 FROM cards c WHERE c.id=?`, id).
-		Scan(&c.ID, &c.ColumnID, &c.Title, &c.Description, &c.Position, &c.DueDate, &c.Cover,
-			&arch, &c.CreatedAt, &c.UpdatedAt, &c.ChecklistTotal, &c.ChecklistDone, &c.CommentCount)
+		Scan(&c.ID, &c.ColumnID, &c.Title, &c.Description, &c.Position, &c.DueDate, &c.Cover, &c.Pinned,
+			&arch, &c.CreatedAt, &c.UpdatedAt, &c.ChecklistTotal, &c.ChecklistDone, &c.AttachmentCount, &c.CommentCount)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -98,6 +101,7 @@ func (s *Store) CardSummary(id int64) (*Card, error) {
 }
 
 type CardPatch struct {
+	Pinned      *bool
 	Title       *string
 	Description *string
 	DueDate     *string
@@ -106,6 +110,11 @@ type CardPatch struct {
 }
 
 func (s *Store) UpdateCard(id int64, p CardPatch) (*Card, error) {
+	if p.Pinned != nil {
+		if _, err := s.db.Exec("UPDATE cards SET pinned=? WHERE id=?", boolInt(*p.Pinned), id); err != nil {
+			return nil, err
+		}
+	}
 	if p.Title != nil {
 		if _, err := s.db.Exec("UPDATE cards SET title=? WHERE id=?", *p.Title, id); err != nil {
 			return nil, err
@@ -145,6 +154,17 @@ func (s *Store) UpdateCard(id int64, p CardPatch) (*Card, error) {
 
 // MoveCard 支持同列排序与跨列拖拽，beforeID=0 表示放到末尾。
 func (s *Store) MoveCard(id, columnID, beforeID int64) (*Card, error) {
+	source, e1 := s.boardIDByCard(id)
+	target, e2 := s.boardIDByColumn(columnID)
+	if e1 != nil || e2 != nil || source != target {
+		return nil, errScope
+	}
+	if beforeID != 0 {
+		var targetCol int64
+		if s.db.QueryRow("SELECT column_id FROM cards WHERE id=?", beforeID).Scan(&targetCol) != nil || targetCol != columnID {
+			return nil, errScope
+		}
+	}
 	var oldCol int64
 	if err := s.db.QueryRow("SELECT column_id FROM cards WHERE id=?", id).Scan(&oldCol); err != nil {
 		return nil, ErrNotFound
@@ -193,7 +213,9 @@ func (s *Store) cardChecklists(cardID int64) []Checklist {
 	rows.Close()
 
 	items, err := s.db.Query(
-		"SELECT id, checklist_id, text, done, position FROM checklist_items ORDER BY position, id")
+		`SELECT i.id, i.checklist_id, i.text, i.done, i.position
+         FROM checklist_items i JOIN checklists k ON k.id=i.checklist_id
+         WHERE k.card_id=? ORDER BY i.position, i.id`, cardID)
 	if err != nil {
 		return out
 	}

@@ -2,7 +2,7 @@ export interface User {
   id: number
   username: string
   display_name: string
-  role: 'admin' | 'member'
+  role: 'admin' | 'workspace_admin' | 'member'
   avatar_color: string
   disabled: boolean
   must_change_password: boolean
@@ -11,12 +11,17 @@ export interface User {
   session_count?: number
 }
 
+export interface Workspace { owner_id: number; can_manage: boolean; id: number; name: string; description: string; board_count: number }
+export interface ManagedUser extends User { workspace_ids: number[]; manager_id: number; manager_name: string }
+
 export interface Board {
+  workspace_id: number
   id: number
   name: string
   description: string
   background: string
   archived: boolean
+  share_count?: number
   card_count: number
   created_at: string
   updated_at: string
@@ -62,6 +67,7 @@ export interface Card {
   description: string
   position: number
   due_date?: string
+  pinned?: boolean
   cover?: string
   archived: boolean
   created_by?: number
@@ -73,12 +79,14 @@ export interface Card {
   checklist_done: number
   checklist_total: number
   attachment_count: number
+  comment_count: number
 }
 
 export interface Column {
   id: number
   board_id: number
   name: string
+  color: string
   position: number
   wip_limit: number
 }

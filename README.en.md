@@ -1,0 +1,142 @@
+# Squirrel Kanban
+
+[中文](README.md) · [English](README.en.md)
+
+A lightweight bilingual kanban for turning ideas into tasks and moving work forward.
+
+Built with React + Vite, Go and SQLite. Production runs through Docker Compose with one application container and one port by default. No external database or Redis is required.
+
+![Getting started template — light theme](docs/screenshots/board-light-en.jpg)
+
+## Features
+
+- Multiple workspaces and three account roles: super administrator, workspace administrator and member. Super administrators can transfer member management ownership.
+- Drag to reorder boards, lists and cards; move cards between lists. Pin cards, add labels, due dates, covers, Markdown descriptions and checklists.
+- Comments, attachment previews, downloads, archiving and restoration. Browser previews support images, PDFs, audio, video and text. Office conversion is optional.
+- Independent share management with fixed short links, live content, expiration, revocation and individual collaboration switches. Guests visit one board without signing in.
+- Chinese / English UI and light / dark themes. Initial preferences follow the browser; explicit choices are remembered.
+- Board backgrounds, canvas pan and zoom, minimap, resizable / collapsible sidebar and keyboard shortcuts.
+- Virtual rendering for large card lists, SSE updates for signed-in accounts, and foreground share checks every 15 seconds. Unchanged boards are not retransmitted.
+
+![Template card details — description and checklist](docs/screenshots/card-detail-en.jpg)
+
+![Getting started template — dark theme](docs/screenshots/board-dark-zh.jpg)
+
+Screenshots use freshly initialized starter templates, with no personal boards or live sharing credentials. A template is created once when the super administrator first signs in; examples can be edited or deleted. User-written content is preserved when switching the UI language.
+
+## Local development
+
+Requirements: **Go 1.24+, Node.js 22+ and npm**. Prefer a supported Go release. Use the committed `package-lock.json`; do not mix package managers.
+
+```sh
+git clone https://gitee.com/storm07106038/kanban.git
+cd kanban
+./dev.sh
+```
+
+On Windows, run `dev.bat`. Open **http://127.0.0.1:5173**. A fresh development database starts with `admin` / `admin` and prompts for a password change. These credentials are for local development only.
+
+- Vite provides frontend hot reload; the API listens on `127.0.0.1:8090`.
+- If `air` is installed, Go reloads automatically. Otherwise restart after backend changes.
+- Development data lives in `.dev/` and survives restarts.
+- Use the same hostname consistently: `localhost` and `127.0.0.1` do not share cookies.
+
+```sh
+# macOS / Linux: custom ports or isolated test data
+API_PORT=9090 WEB_PORT=5174 ./dev.sh
+DEV_DATA_DIR=/tmp/squirrel-test ./dev.sh
+```
+
+On Windows, set the same variables before running the script. See [CONTRIBUTING.md](CONTRIBUTING.md) for checks and contribution rules.
+
+## Docker Compose deployment
+
+Requires Docker Engine / Docker Desktop and **Compose v2**.
+
+```sh
+cp .env.example .env
+# Edit KANBAN_ADMIN_USER and KANBAN_ADMIN_PASS.
+# Use a random initial password: 12–72 bytes, never empty.
+
+docker compose config -q
+docker compose up -d --build --wait
+```
+
+Open **http://127.0.0.1:8080**. The host port is bound to loopback by default. For public access, use an HTTPS reverse proxy and set `KANBAN_COOKIE_SECURE=true`. Keep it `false` for local HTTP. Preserve Host and overwrite client-supplied forwarding headers at the proxy.
+
+The runtime image contains neither Node nor compilers. It runs as UID/GID `10001`, with a read-only root filesystem, dropped capabilities, a writable data volume and bounded temporary storage. `/healthz` checks the service and database connection. Fresh production initialization rejects missing or short passwords; environment changes do not reset existing accounts.
+
+```sh
+docker compose logs -f kanban
+docker compose up -d --build --wait  # update without deleting data
+docker compose down                # stop, retain the volume
+```
+
+SQLite, attachments and backgrounds persist in **`squirrel-kanban-data`**. Do not run `docker compose down -v` when data must be retained. Separate deployments must use different host ports and volumes; never share a SQLite data directory between instances.
+
+### Optional Office previews
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.preview.yml up -d --build --wait
+```
+
+This starts an additional Gotenberg / LibreOffice service and uses more resources. It is disabled by default; Office files can still be downloaded without it.
+
+### Backup and migration
+
+Stop writes and back up the entire data directory, including SQLite sidecar files and uploaded assets. Existing `./data` bind mounts are not automatically moved into the named volume.
+
+See [deployment, backup and restore](docs/deployment.md).
+
+## Accounts and share permissions
+
+| Role | Scope |
+| --- | --- |
+| Super administrator | All accounts and workspaces; create administrators / members and transfer member management ownership |
+| Workspace administrator | Create and manage their own workspaces, use assigned spaces and manage only members assigned to them |
+| Member | Operate boards, cards and shares in assigned spaces; cannot create / manage spaces or manage accounts |
+| Share guest | Access only the linked board, with individual collaboration switches |
+
+Ownership transfers immediately remove the previous administrator's management access. Existing workspace access is retained. Saving account settings revokes that account's sessions; sign in again to apply the updated settings.
+
+Each share can independently enable **pinning, cover changes, attachment previews / downloads, comments, checklist completion, card movement, content editing and card creation**. Disabled switches grant no write access. Review the selected switches when creating or editing a share. Guests cannot delete / archive cards, upload files, manage lists / labels or access other boards and account settings.
+
+A sharing URL is an access credential: never publish a live private link. Permission changes, revocation, expiration and deletion are enforced on subsequent requests. Shared content stays live; it is not a snapshot.
+
+## Keyboard shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl/Cmd + K` | Quick search |
+| `Ctrl/Cmd + B` | Toggle sidebar |
+| `N` / `/` | Create a card / filter the current board |
+| `Esc` | Close, cancel editing or clear the filter |
+| `Ctrl/Cmd + wheel` / pinch | Zoom canvas |
+| Two-finger scroll / `Shift + wheel` | Pan / horizontal pan |
+| `Space + drag` / middle mouse | Temporary pan |
+| `H` / `M` | Pan mode / minimap |
+| `+` / `-` / `0` / `F` | Zoom in / out / reset / fit width |
+
+Single-key shortcuts do not trigger while typing or composing text with an IME.
+
+## Verification and project conventions
+
+```sh
+cd web
+npm ci
+npm test
+npm run build
+cd ../server
+go test ./...
+go vet ./...
+```
+
+[CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) · [deployment review](docs/deployment-review.md)
+
+Git and Docker exclude runtime data, backups, credentials, dependencies, build output and browser diagnostics. Publishable template screenshots live in `docs/screenshots/`. Ignore rules do not remove previously committed history.
+
+`.github/workflows/ci.yml` provides GitHub Actions verification and container smoke tests. The current origin is Gitee: enable the workflow on a GitHub mirror or adapt it for Gitee CI. Real container builds and Office preview tests still require a running Docker engine. Known development-tool vulnerabilities and release blockers are recorded in the deployment review.
+
+## License
+
+No project license has been selected yet; no open-source grant for commercial use, modification or redistribution is currently declared. Third-party font terms are in [OFL.txt](web/public/fonts/OFL.txt) and [SOURCE.md](web/public/fonts/SOURCE.md). Complete asset attribution and Git-history review before public release.

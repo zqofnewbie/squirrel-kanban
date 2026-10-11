@@ -120,9 +120,26 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 		case <-ctx.Done():
 			return
 		case payload := <-sub.ch:
+			active, err := s.userFromRequest(r)
+			if err != nil || (boardID != 0 && !s.store.canBoard(active, boardID)) {
+				return
+			}
+			var event Event
+			if json.Unmarshal(payload, &event) != nil {
+				continue
+			}
+			if event.BoardID == 0 {
+				payload, _ = json.Marshal(Event{Type: event.Type, Actor: event.Actor})
+			} else if !s.store.canBoard(active, event.BoardID) {
+				continue
+			}
 			_, _ = w.Write([]byte("data: " + string(payload) + "\n\n"))
 			flusher.Flush()
 		case <-ping:
+			active, err := s.userFromRequest(r)
+			if err != nil || (boardID != 0 && !s.store.canBoard(active, boardID)) {
+				return
+			}
 			_, _ = w.Write([]byte(": ping\n\n"))
 			flusher.Flush()
 		}

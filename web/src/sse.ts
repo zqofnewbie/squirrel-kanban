@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { api } from './api'
 import { useStore } from './store'
 import type { ServerEvent } from './types'
 
@@ -27,6 +28,7 @@ export function useEventStream(boardId: number | undefined) {
     }
     es.onerror = () => {
       reconnected = true
+      void api.me().catch(() => {})
     }
 
     return () => es.close()

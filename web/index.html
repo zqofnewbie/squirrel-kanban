@@ -2,10 +2,24 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (() => {
+        let theme, lang;
+        try { theme = localStorage.getItem('squirrel.theme.preference.v1'); lang = localStorage.getItem('squirrel.language.v1'); } catch {}
+        document.documentElement.classList.toggle('dark', theme === 'dark' || (theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches));
+        const language = lang === 'zh' || lang === 'en' ? lang : ((navigator.languages?.[0] || navigator.language || 'en').toLowerCase().startsWith('zh') ? 'zh' : 'en');
+        document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en-US';
+        window.addEventListener('DOMContentLoaded', () => { if(language === 'en') document.title = 'Squirrel Board'; }, {once:true});
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#7F77DD" />
-    <title>看板</title>
-  </head>
+    <meta name="referrer" content="no-referrer" />
+    <meta name="theme-color" content="#2563EB" />
+    <meta name="description" content="松鼠看板，一个轻量、流畅的中文看板。" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <title>松鼠看板</title>
+    <link rel="stylesheet" href="/fonts/noto-sc.css" />
+</head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

@@ -16,7 +16,7 @@ export default defineConfig({
     // 混用会出现"明明登录了却提示未登录"，统一用 127.0.0.1 避免踩坑
     host: '127.0.0.1',
     port: 5173,
-    strictPort: false,
+    strictPort: true,
     // API 与 SSE 都走代理，浏览器侧始终同源，Cookie 无需 CORS
     proxy: {
       '/api': { target: API, changeOrigin: false },

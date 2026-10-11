@@ -1,57 +1,62 @@
-import { useEffect, useState } from 'react'
+import { useLanguage } from './useLanguage'
+import { t } from './i18n'
+import Icon from './Icon'
+import { useEffect, useRef, useState } from 'react'
 import { api } from './api'
 import { useStore } from './store'
 import type { Card } from './types'
-import { Button, Empty, Modal } from './ui'
+import { Button, ConfirmDialog, Empty, Input, Modal, formatDate } from './ui'
 
 export default function ArchivedBox() {
-  const open = useStore((s) => s.archiveOpen)
-  const setOpen = useStore((s) => s.setArchiveOpen)
-  const board = useStore((s) => s.board)
-  const reloadBoard = useStore((s) => s.reloadBoard)
+  useLanguage()
+  const open = useStore(s => s.archiveOpen)
+  const setOpen = useStore(s => s.setArchiveOpen)
+  const board = useStore(s => s.board)
+  const reloadBoard = useStore(s => s.reloadBoard)
+  const [deleting, setDeleting] = useState<Card | null>(null)
+  const [busy, setBusy] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [failure, setFailure] = useState('')
   const [cards, setCards] = useState<Card[]>([])
-
+  const [search, setSearch] = useState('')
+  const [revision, setRevision] = useState(0)
+  const request = useRef(0)
   useEffect(() => {
     if (!open || !board) return
-    api
-      .archivedCards(board.id)
-      .then(setCards)
-      .catch(() => setCards([]))
-  }, [open, board])
-
-  async function restore(c: Card) {
-    await api.updateCard(c.id, { archived: false }).catch(() => {})
-    setCards((list) => list.filter((x) => x.id !== c.id))
-    void reloadBoard()
+    const version=++request.current
+    setFailure(''); setLoading(true)
+    api.archivedCards(board.id)
+      .then(cards => { if (version===request.current) setCards(cards) })
+      .catch(e => { if (version===request.current) setFailure(e.message) })
+      .finally(() => { if (version===request.current) setLoading(false) })
+    return () => { ++request.current }
+  }, [open, board?.id, revision])
+  useEffect(()=>{setSearch('');setCards([]);setDeleting(null)},[open,board?.id])
+  async function restore(c:Card) {
+    if(busy!==null)return
+    const version=request.current
+    setBusy(c.id);setFailure('')
+    try {
+      await api.updateCard(c.id,{archived:false})
+      if(version===request.current)setCards(list=>list.filter(x=>x.id!==c.id))
+      await reloadBoard(); await useStore.getState().loadBoards()
+    } catch(e) { if(version===request.current)setFailure(e instanceof Error?e.message:t('操作失败')) }
+    finally {setBusy(null)}
   }
-
-  async function purge(c: Card) {
-    await api.deleteCard(c.id).catch(() => {})
-    setCards((list) => list.filter((x) => x.id !== c.id))
-  }
-
-  return (
-    <Modal open={open} onClose={() => setOpen(false)} title="已归档的卡片" width={520}>
-      {cards.length === 0 ? (
-        <Empty text="归档箱是空的" />
-      ) : (
-        <ul className="scroll-thin max-h-[52vh] space-y-1 overflow-y-auto">
-          {cards.map((c) => (
-            <li
-              key={c.id}
-              className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-black/[0.03] dark:hover:bg-white/[0.05]"
-            >
-              <span className="min-w-0 flex-1 truncate text-[13px]">{c.title}</span>
-              <Button size="sm" onClick={() => restore(c)}>
-                恢复
-              </Button>
-              <Button size="sm" variant="danger" onClick={() => purge(c)}>
-                彻底删除
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
+  const query=search.trim().toLocaleLowerCase()
+  const filtered=cards.filter(c=>!query||`${c.title} ${c.description} ${c.labels.map(l=>l.name).join(' ')}`.toLocaleLowerCase().includes(query))
+  return <>
+    <Modal open={open} onClose={()=>{if(busy===null)setOpen(false)}} title={t('已归档的卡片')} width={660} footer={<div className="archive-footer"><span>{t('归档会保留内容，恢复后回到原列表。')}</span><Button size="sm" onClick={()=>setOpen(false)} disabled={busy!==null}>{t('关闭')}</Button></div>}>
+      <div className="archive-heading"><div><strong>{board?.name}</strong><p>{t('共 {0} 张归档卡片',[cards.length])}</p></div><Button size="sm" disabled={loading||busy!==null} onClick={()=>setRevision(v=>v+1)}><Icon name="refresh" size={14} className={loading?'animate-spin':''}/>{loading?t('正在加载…'):t('刷新')}</Button></div>
+      <Input className="mb-4" aria-label={t('搜索归档卡片')} placeholder={t('搜索标题、描述或标签')} value={search} onChange={e=>setSearch(e.target.value)}/>
+      {failure&&<p role="alert" className="error-banner">{failure}<button onClick={()=>setRevision(v=>v+1)} disabled={loading}>{t('重试')}</button></p>}
+      {loading ? <p role="status" className="py-10 text-center text-sm text-[var(--muted)]">{t('正在加载…')}</p> : !filtered.length ? <div className="archive-empty"><Icon name="archive" size={32}/><Empty text={query?t('没有匹配的卡片'):t('归档箱是空的')}/><p>{query?t('试试其他关键词'):t('暂时不用的任务可以归档，需要时再恢复。')}</p></div> : <ul className="archive-list">{filtered.map(c=><li key={c.id} className="archive-item">
+        <div className="archive-item-content"><h4>{c.title}</h4><p className="archive-meta">{board?.columns.find(col=>col.id===c.column_id)?.name || t('原列表')}<span> · {formatDate(c.updated_at)}</span>{c.due_date&&<span> · {t('截止 {0}',[formatDate(c.due_date)])}</span>}</p>
+          {!!c.labels.length&&<div className="mt-2 flex flex-wrap gap-1">{c.labels.map(l=><span key={l.id} className="colored-label rounded px-2 py-0.5 text-[11px]" style={{background:l.color+'22','--label-color':l.color} as React.CSSProperties}>{l.name}</span>)}</div>}
+          {c.description&&<details className="archive-description"><summary>{t('查看描述')}</summary><p>{c.description}</p></details>}
+        </div><div className="archive-item-actions"><Button size="sm" disabled={busy!==null} onClick={()=>void restore(c)}>{busy===c.id?t('恢复中…'):t('恢复')}</Button><Button size="sm" disabled={busy!==null} variant="danger" onClick={()=>setDeleting(c)}>{t('彻底删除')}</Button></div>
+      </li>)}</ul>}
     </Modal>
-  )
+    <ConfirmDialog open={!!deleting} title={t('彻底删除卡片')} danger message={t('删除「{0}」及其附件？此操作不可恢复。',[deleting?.title])} okText={t('彻底删除')} onOK={async()=>{if(!deleting)return;setBusy(deleting.id);try{await api.deleteCard(deleting.id);setCards(list=>list.filter(c=>c.id!==deleting.id))}finally{setBusy(null)}}} onClose={()=>setDeleting(null)}/>
+  </>
 }

@@ -11,10 +11,11 @@ var ErrNotFound = errors.New("记录不存在")
 
 func (s *Store) ListBoards() ([]Board, error) {
 	rows, err := s.db.Query(
-		`SELECT b.id, b.name, b.description, b.background, b.archived, b.created_at, b.updated_at,
+		`SELECT b.id, b.workspace_id, b.name, b.description, b.background, b.archived, b.created_at, b.updated_at,
 		        (SELECT COUNT(*) FROM cards c
 		           JOIN board_columns col ON col.id = c.column_id
-		          WHERE col.board_id = b.id AND c.archived = 0) AS card_count
+		          WHERE col.board_id = b.id AND c.archived = 0) AS card_count,
+ (SELECT COUNT(*) FROM board_shares sh WHERE sh.board_id=b.id AND sh.enabled=1 AND (sh.expires_at='' OR julianday(sh.expires_at)>julianday('now'))) AS share_count
 		 FROM boards b WHERE b.archived = 0 ORDER BY b.updated_at DESC`)
 	if err != nil {
 		return nil, err
@@ -24,8 +25,8 @@ func (s *Store) ListBoards() ([]Board, error) {
 	for rows.Next() {
 		var b Board
 		var arch int
-		if err := rows.Scan(&b.ID, &b.Name, &b.Description, &b.Background, &arch,
-			&b.CreatedAt, &b.UpdatedAt, &b.CardCount); err != nil {
+		if err := rows.Scan(&b.ID, &b.WorkspaceID, &b.Name, &b.Description, &b.Background, &arch,
+			&b.CreatedAt, &b.UpdatedAt, &b.CardCount, &b.ShareCount); err != nil {
 			return nil, err
 		}
 		b.Archived = arch == 1
@@ -34,28 +35,42 @@ func (s *Store) ListBoards() ([]Board, error) {
 	return out, nil
 }
 
-func (s *Store) CreateBoard(name, description, background string) (*Board, error) {
+func (s *Store) CreateBoard(name, description, background string, workspaceIDs ...int64) (*Board, error) {
+	workspaceID := int64(1)
+	if len(workspaceIDs) > 0 {
+		workspaceID = workspaceIDs[0]
+	}
+	return s.createBoardWithColumns(name, description, background, workspaceID, []string{"待办", "进行中", "已完成"})
+}
+func (s *Store) createBoardWithColumns(name, description, background string, workspaceID int64, cols []string) (*Board, error) {
 	if strings.TrimSpace(name) == "" {
 		name = "未命名看板"
 	}
 	if background == "" {
-		background = "#EEEDFE"
+		background = "#F7F9FC"
 	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
 	now := nowISO()
-	res, err := s.db.Exec(
-		`INSERT INTO boards(name, description, background, created_at, updated_at)
-		 VALUES(?,?,?,?,?)`, name, description, background, now, now)
+	res, err := tx.Exec(
+		`INSERT INTO boards(name, description, background, created_at, updated_at, workspace_id)
+		 VALUES(?,?,?,?,?,?)`, name, description, background, now, now, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	id, _ := res.LastInsertId()
-	cols := []string{"待办", "进行中", "已完成"}
 	for i, c := range cols {
-		if _, err := s.db.Exec(
-			`INSERT INTO board_columns(board_id, name, position) VALUES(?,?,?)`,
-			id, c, float64((i+1)*1024)); err != nil {
+		if _, err := tx.Exec(
+			`INSERT INTO board_columns(board_id, name, position, color) VALUES(?,?,?,?)`,
+			id, c, float64((i+1)*1024), columnColors[i]); err != nil {
 			return nil, err
 		}
+	}
+	if err = tx.Commit(); err != nil {
+		return nil, err
 	}
 	return s.GetBoard(id)
 }
@@ -64,8 +79,8 @@ func (s *Store) GetBoard(id int64) (*Board, error) {
 	var b Board
 	var arch int
 	err := s.db.QueryRow(
-		`SELECT id, name, description, background, archived, created_at, updated_at FROM boards WHERE id=?`, id).
-		Scan(&b.ID, &b.Name, &b.Description, &b.Background, &arch, &b.CreatedAt, &b.UpdatedAt)
+		`SELECT id, workspace_id, name, description, background, archived, created_at, updated_at FROM boards WHERE id=?`, id).
+		Scan(&b.ID, &b.WorkspaceID, &b.Name, &b.Description, &b.Background, &arch, &b.CreatedAt, &b.UpdatedAt)
 	if err != nil {
 		return nil, ErrNotFound
 	}
@@ -126,7 +141,7 @@ func (s *Store) GetBoardDetail(id int64) (*BoardDetail, error) {
 	}
 
 	rows, err := s.db.Query(
-		`SELECT id, board_id, name, position, wip_limit FROM board_columns
+		`SELECT id, board_id, name, color, position, wip_limit FROM board_columns
 		 WHERE board_id=? ORDER BY position, id`, id)
 	if err != nil {
 		return nil, err
@@ -135,7 +150,7 @@ func (s *Store) GetBoardDetail(id int64) (*BoardDetail, error) {
 	cols := []ColumnWithCards{}
 	for rows.Next() {
 		var c Column
-		if err := rows.Scan(&c.ID, &c.BoardID, &c.Name, &c.Position, &c.WipLimit); err != nil {
+		if err := rows.Scan(&c.ID, &c.BoardID, &c.Name, &c.Color, &c.Position, &c.WipLimit); err != nil {
 			rows.Close()
 			return nil, err
 		}
@@ -146,17 +161,18 @@ func (s *Store) GetBoardDetail(id int64) (*BoardDetail, error) {
 
 	cardRows, err := s.db.Query(
 		`SELECT c.id, c.column_id, c.title, c.description, c.position,
-		        COALESCE(c.due_date,''), c.cover, c.archived, COALESCE(c.created_by,0),
+		        COALESCE(c.due_date,''), c.cover, c.pinned, c.archived, COALESCE(c.created_by,0),
 		        c.created_at, c.updated_at,
 		        (SELECT COUNT(*) FROM checklist_items i JOIN checklists k ON k.id=i.checklist_id
 		          WHERE k.card_id=c.id) AS total,
 		        (SELECT COUNT(*) FROM checklist_items i JOIN checklists k ON k.id=i.checklist_id
 		          WHERE k.card_id=c.id AND i.done=1) AS done,
-		        (SELECT COUNT(*) FROM attachments a WHERE a.card_id=c.id) AS files
+		        (SELECT COUNT(*) FROM attachments a WHERE a.card_id=c.id) AS files,
+ (SELECT COUNT(*) FROM card_comments m WHERE m.card_id=c.id) AS comments
 		 FROM cards c
 		 JOIN board_columns col ON col.id = c.column_id
 		 WHERE col.board_id=? AND c.archived=0
-		 ORDER BY c.position, c.id`, id)
+		 ORDER BY c.pinned DESC, c.position, c.id`, id)
 	if err != nil {
 		return nil, err
 	}
@@ -166,8 +182,8 @@ func (s *Store) GetBoardDetail(id int64) (*BoardDetail, error) {
 		var c Card
 		var arch int
 		if err := cardRows.Scan(&c.ID, &c.ColumnID, &c.Title, &c.Description, &c.Position,
-			&c.DueDate, &c.Cover, &arch, &c.CreatedBy, &c.CreatedAt, &c.UpdatedAt,
-			&c.ChecklistTotal, &c.ChecklistDone, &c.CommentCount); err != nil {
+			&c.DueDate, &c.Cover, &c.Pinned, &arch, &c.CreatedBy, &c.CreatedAt, &c.UpdatedAt,
+			&c.ChecklistTotal, &c.ChecklistDone, &c.AttachmentCount, &c.CommentCount); err != nil {
 			return nil, err
 		}
 		c.Archived = arch == 1
@@ -191,7 +207,7 @@ func (s *Store) GetBoardDetail(id int64) (*BoardDetail, error) {
 func (s *Store) ListArchivedCards(boardID int64) ([]Card, error) {
 	rows, err := s.db.Query(
 		`SELECT c.id, c.column_id, c.title, c.description, c.position,
-		        COALESCE(c.due_date,''), c.cover, c.created_at, c.updated_at
+		        COALESCE(c.due_date,''), c.cover, c.pinned, c.created_at, c.updated_at
 		 FROM cards c JOIN board_columns col ON col.id = c.column_id
 		 WHERE col.board_id=? AND c.archived=1
 		 ORDER BY c.updated_at DESC`, boardID)
@@ -202,7 +218,7 @@ func (s *Store) ListArchivedCards(boardID int64) ([]Card, error) {
 	for rows.Next() {
 		var c Card
 		if err := rows.Scan(&c.ID, &c.ColumnID, &c.Title, &c.Description, &c.Position,
-			&c.DueDate, &c.Cover, &c.CreatedAt, &c.UpdatedAt); err != nil {
+			&c.DueDate, &c.Cover, &c.Pinned, &c.CreatedAt, &c.UpdatedAt); err != nil {
 			rows.Close()
 			return nil, err
 		}
@@ -241,8 +257,12 @@ func (s *Store) CreateColumn(boardID int64, name string) (*Column, error) {
 	if err != nil {
 		return nil, err
 	}
+	count, err := s.queryInt("SELECT COUNT(*) FROM board_columns WHERE board_id=?", boardID)
+	if err != nil {
+		return nil, err
+	}
 	res, err := s.db.Exec(
-		`INSERT INTO board_columns(board_id, name, position) VALUES(?,?,?)`, boardID, name, pos)
+		`INSERT INTO board_columns(board_id, name, position, color) VALUES(?,?,?,?)`, boardID, name, pos, columnColors[count%len(columnColors)])
 	if err != nil {
 		return nil, err
 	}
@@ -254,27 +274,33 @@ func (s *Store) CreateColumn(boardID int64, name string) (*Column, error) {
 func (s *Store) GetColumn(id int64) (*Column, error) {
 	var c Column
 	err := s.db.QueryRow(
-		`SELECT id, board_id, name, position, wip_limit FROM board_columns WHERE id=?`, id).
-		Scan(&c.ID, &c.BoardID, &c.Name, &c.Position, &c.WipLimit)
+		`SELECT id, board_id, name, color, position, wip_limit FROM board_columns WHERE id=?`, id).
+		Scan(&c.ID, &c.BoardID, &c.Name, &c.Color, &c.Position, &c.WipLimit)
 	if err != nil {
 		return nil, ErrNotFound
 	}
 	return &c, nil
 }
 
-func (s *Store) UpdateColumn(id int64, name string, wipLimit *int) error {
+func (s *Store) UpdateColumn(id int64, name string, wipLimit *int, color *string) error {
+	col, err := s.GetColumn(id)
+	if err != nil {
+		return err
+	}
 	if name != "" {
-		if _, err := s.db.Exec("UPDATE board_columns SET name=? WHERE id=?", name, id); err != nil {
-			return err
-		}
+		col.Name = name
 	}
 	if wipLimit != nil {
-		if _, err := s.db.Exec("UPDATE board_columns SET wip_limit=? WHERE id=?", *wipLimit, id); err != nil {
-			return err
-		}
+		col.WipLimit = *wipLimit
 	}
-	bid, _ := s.boardIDByColumn(id)
-	s.TouchBoard(bid)
+	if color != nil {
+		col.Color = *color
+	}
+	_, err = s.db.Exec("UPDATE board_columns SET name=?, wip_limit=?, color=? WHERE id=?", col.Name, col.WipLimit, col.Color, id)
+	if err != nil {
+		return err
+	}
+	s.TouchBoard(col.BoardID)
 	return nil
 }
 
@@ -282,6 +308,12 @@ func (s *Store) MoveColumn(id int64, beforeID int64) error {
 	bid, err := s.boardIDByColumn(id)
 	if err != nil {
 		return ErrNotFound
+	}
+	if beforeID != 0 {
+		other, e := s.boardIDByColumn(beforeID)
+		if e != nil || other != bid {
+			return errScope
+		}
 	}
 	pos, err := s.nextPos("board_columns", "board_id", bid, beforeID)
 	if err != nil {
@@ -382,12 +414,17 @@ func (s *Store) DeleteLabel(id int64) error {
 }
 
 func (s *Store) ToggleCardLabel(cardID, labelID int64, on bool) error {
+	bid, err := s.boardIDByCard(cardID)
+	var labelBoard int64
+	if err != nil || s.db.QueryRow("SELECT board_id FROM labels WHERE id=?", labelID).Scan(&labelBoard) != nil || labelBoard != bid {
+		return errScope
+	}
 	if on {
 		_, err := s.db.Exec(
 			`INSERT OR IGNORE INTO card_labels(card_id, label_id) VALUES(?,?)`, cardID, labelID)
 		return err
 	}
-	_, err := s.db.Exec(`DELETE FROM card_labels WHERE card_id=? AND label_id=?`, cardID, labelID)
+	_, err = s.db.Exec(`DELETE FROM card_labels WHERE card_id=? AND label_id=?`, cardID, labelID)
 	return err
 }
 

@@ -1,0 +1,29 @@
+# Optional office previews: docker compose -f docker-compose.yml -f docker-compose.preview.yml up -d --build
+services:
+  kanban:
+    environment:
+      KANBAN_PREVIEW_URL: http://preview:3000
+    depends_on:
+      preview:
+        condition: service_healthy
+  preview:
+    image: gotenberg/gotenberg:8-libreoffice
+    restart: unless-stopped
+    # No host port; documents stay on the private Compose network.
+    command:
+      - gotenberg
+      - --api-timeout=60s
+      - --api-body-limit=34MB
+      - --libreoffice-max-queue-size=8
+      - --libreoffice-deny-list=.*
+      - --webhook-disable=true
+    mem_limit: 768m
+    cpus: 1.0
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:3000/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

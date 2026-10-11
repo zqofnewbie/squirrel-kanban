@@ -1,19 +1,36 @@
 services:
   kanban:
     build: .
-    image: kanban:latest
-    container_name: kanban
+    image: squirrel-kanban:latest
     restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,mode=1777
+    pids_limit: 128
+    stop_grace_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     ports:
       # 只映射到本机，配合反代或 SSH 隧道访问；需要局域网访问时改成 "8080:8080"
       - "127.0.0.1:8080:8080"
     volumes:
-      # 数据库与附件都在这一个目录里，备份就是拷贝它
-      - ./data:/data
+      # 数据库与附件都在命名卷内，避免宿主机 UID 写权限问题
+      - kanban-data:/data
     environment:
       TZ: Asia/Shanghai
       KANBAN_ADDR: ":8080"
       KANBAN_DATA: "/data"
-      # 首次启动自动创建超级管理员；之后想改请在「用户管理」里操作
-      KANBAN_ADMIN_USER: admin
-      KANBAN_ADMIN_PASS: admin
+      KANBAN_COOKIE_SECURE: ${KANBAN_COOKIE_SECURE:-false}
+      # 首次启动创建唯一管理员；已有账号在应用内修改密码
+      KANBAN_ADMIN_USER: ${KANBAN_ADMIN_USER:-admin}
+      KANBAN_ADMIN_PASS: ${KANBAN_ADMIN_PASS:?Set KANBAN_ADMIN_PASS in .env (at least 12 characters)}
+
+volumes:
+  kanban-data:
+    name: squirrel-kanban-data

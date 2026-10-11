@@ -1,4 +1,4 @@
--- 用户与会话（账号只能由管理员创建，系统不提供注册入口）
+-- 唯一管理员与会话（历史用户行保留，其他账号由迁移停用）
 CREATE TABLE IF NOT EXISTS users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   username      TEXT NOT NULL UNIQUE,
@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS board_columns (
   board_id   INTEGER NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
   name       TEXT NOT NULL,
   position   REAL NOT NULL,
+  color      TEXT NOT NULL DEFAULT '#94A3B8',
   wip_limit  INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_columns_board ON board_columns(board_id, position);
@@ -113,3 +114,38 @@ CREATE TABLE IF NOT EXISTS activities (
 );
 CREATE INDEX IF NOT EXISTS idx_activities_board ON activities(board_id, id DESC);
 CREATE INDEX IF NOT EXISTS idx_activities_card ON activities(card_id, id DESC);
+
+-- 单管理员迁移与免登录分享；旧用户保留以维持历史记录。
+CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS board_shares (
+  id TEXT PRIMARY KEY,
+  board_id INTEGER NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+  access_key TEXT NOT NULL,
+  short_key TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 0,
+  expires_at TEXT NOT NULL DEFAULT '',
+  permissions TEXT NOT NULL DEFAULT '{}'
+);
+CREATE TABLE IF NOT EXISTS share_sessions (
+  token_hash TEXT PRIMARY KEY,
+  share_id TEXT NOT NULL REFERENCES board_shares(id) ON DELETE CASCADE,
+  expires_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_share_sessions_share ON share_sessions(share_id);
+CREATE TABLE IF NOT EXISTS card_comments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  card_id INTEGER NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+  author TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_comments_card ON card_comments(card_id, id);
+
+CREATE TABLE IF NOT EXISTS user_board_order (
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ board_id INTEGER NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+ position INTEGER NOT NULL,
+ PRIMARY KEY(user_id, board_id)
+);

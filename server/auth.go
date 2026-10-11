@@ -21,9 +21,16 @@ func (a *AuthUser) IsAdmin() bool { return a.Role == "admin" }
 
 func (s *Server) withAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if !validOrigin(w, r) {
+			return
+		}
 		u, err := s.userFromRequest(r)
-		if err != nil {
+		if err != nil || u == nil {
 			writeErr(w, http.StatusUnauthorized, mapErr(err))
+			return
+		}
+		if !s.allowResource(r, u) {
+			writeErr(w, http.StatusForbidden, "没有这个工作空间的访问权限")
 			return
 		}
 		ctx := context.WithValue(r.Context(), ctxKey{}, u)
@@ -47,9 +54,7 @@ func (s *Server) userFromRequest(r *http.Request) (*AuthUser, error) {
 	if c, err := r.Cookie(cookieName); err == nil {
 		token = c.Value
 	}
-	if token == "" && r.URL.Query().Get("token") != "" {
-		token = r.URL.Query().Get("token")
-	}
+
 	u, actor, err := s.store.SessionUser(token)
 	if err != nil {
 		return nil, err
@@ -68,6 +73,7 @@ func setSessionCookie(w http.ResponseWriter, token string) {
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   envBool("KANBAN_COOKIE_SECURE"),
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   int((30 * 24 * time.Hour).Seconds()),
 	})
@@ -79,6 +85,7 @@ func clearSessionCookie(w http.ResponseWriter) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   envBool("KANBAN_COOKIE_SECURE"),
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	})

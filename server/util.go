@@ -34,3 +34,10 @@ func envBool(k string) bool {
 	v := strings.ToLower(strings.TrimSpace(os.Getenv(k)))
 	return v == "1" || v == "true" || v == "yes" || v == "on"
 }
+
+func derefStr(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}

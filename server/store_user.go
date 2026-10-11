@@ -57,14 +57,14 @@ func (s *Store) ensureSeed() error {
 		return err
 	}
 	if n > 0 {
-		return nil
+		return s.ensureSingleAdmin()
 	}
 	username := envOr("KANBAN_ADMIN_USER", "admin")
 	password := envOr("KANBAN_ADMIN_PASS", "admin")
 	if err := s.CreateUser(username, username, password, "admin", true); err != nil {
 		return err
 	}
-	return s.createStarterBoard(1)
+	return s.ensureSingleAdmin()
 }
 
 func (s *Store) createStarterBoard(adminID int64) error {
@@ -72,7 +72,7 @@ func (s *Store) createStarterBoard(adminID int64) error {
 	res, err := s.db.Exec(
 		`INSERT INTO boards(name, description, background, created_at, updated_at)
 		 VALUES(?,?,?,?,?)`,
-		"我的第一个看板", "拖拽卡片试试，双击标题可以直接改。", "#EEEDFE", now, now)
+		"我的第一个看板", "把想法变成卡片，把计划一步步完成。", "#F7F9FC", now, now)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (s *Store) createStarterBoard(adminID int64) error {
 			return err
 		}
 	}
-	samples := []string{"双击标题可以直接改", "试着把我拖到「进行中」", "点开卡片看详情、清单和附件"}
+	samples := []string{"点击卡片右上角的编辑按钮改标题", "试着把我拖到「进行中」", "点开卡片看详情、清单和附件"}
 	for i, t := range samples {
 		if _, err := s.db.Exec(
 			`INSERT INTO cards(column_id, title, position, created_by, created_at, updated_at)
@@ -119,7 +119,7 @@ func (s *Store) CreateUser(username, displayName, password, role string, mustCha
 	if username == "" || password == "" {
 		return errors.New("登录名和密码不能为空")
 	}
-	if role != "admin" && role != "member" {
+	if role != "admin" && role != "member" && role != "workspace_admin" {
 		role = "member"
 	}
 	if displayName == "" {
@@ -266,7 +266,7 @@ func (s *Store) Authenticate(username, password string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	if disabled == 1 {
+	if disabled == 1 || (u.Role != "admin" && u.Role != "workspace_admin" && u.Role != "member") {
 		return nil, ErrDisabled
 	}
 	u.Disabled = false
@@ -322,7 +322,7 @@ func (s *Store) SessionUser(token string) (*User, string, error) {
 	if err != nil {
 		return nil, "", ErrBadCredentials
 	}
-	if disabled == 1 {
+	if disabled == 1 || (u.Role != "admin" && u.Role != "workspace_admin" && u.Role != "member") {
 		return nil, "", ErrDisabled
 	}
 	u.Disabled = false
@@ -357,4 +357,79 @@ func envOr(k, def string) string {
 		return v
 	}
 	return def
+}
+
+// 沿用固定超级管理员；历史普通账号保持停用，新版分配的子管理员不受旧迁移影响。
+func (s *Store) ensureSingleAdmin() error {
+	migrated, err := s.queryInt("SELECT COUNT(*) FROM app_settings WHERE key='admin_id'")
+	if err != nil {
+		return err
+	}
+	if migrated == 0 {
+		// SQLite 自带快照会包含 WAL；不删除旧账号或任何看板内容。
+		if _, err := s.db.Exec("VACUUM INTO ?", s.path+".pre-single-admin-"+time.Now().UTC().Format("20060102T150405.000000000")+".db"); err != nil {
+			return err
+		}
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	var id int64
+	err = tx.QueryRow("SELECT CAST(value AS INTEGER) FROM app_settings WHERE key='admin_id'").Scan(&id)
+	if err == sql.ErrNoRows {
+		err = tx.QueryRow(`SELECT id FROM users WHERE role='admin' AND disabled=0
+    ORDER BY CASE WHEN username=? THEN 0 ELSE 1 END, id LIMIT 1`, envOr("KANBAN_ADMIN_USER", "admin")).Scan(&id)
+		if err == sql.ErrNoRows {
+			err = tx.QueryRow("SELECT id FROM users WHERE role='admin' ORDER BY id LIMIT 1").Scan(&id)
+		}
+		if err != nil {
+			return errors.New("没有可保留的管理员账号，请检查原数据库")
+		}
+		if _, err = tx.Exec("INSERT INTO app_settings(key,value) VALUES('admin_id',?)", id); err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	}
+	var count int
+	if err = tx.QueryRow("SELECT COUNT(*) FROM users WHERE id=?", id).Scan(&count); err != nil {
+		return err
+	}
+	if count != 1 {
+		return errors.New("原管理员账号不存在")
+	}
+	allowedRole := "workspace_admin"
+	if migrated != 0 {
+		allowedRole = "member"
+	}
+	if _, err = tx.Exec("UPDATE users SET disabled=1 WHERE id<>? AND role<>'workspace_admin' AND role<>?", id, allowedRole); err != nil {
+		return err
+	}
+	if _, err = tx.Exec("DELETE FROM sessions WHERE user_id<>? AND user_id NOT IN (SELECT id FROM users WHERE role='workspace_admin' OR role=?)", id, allowedRole); err != nil {
+		return err
+	}
+	if _, err = tx.Exec("UPDATE users SET role='admin',disabled=0 WHERE id=?", id); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// Production initialization must never silently create a known default password.
+// Existing installations keep their credentials; dev mode stays convenient locally.
+func (s *Store) validateBootstrap(dev bool) error {
+	n, err := s.queryInt("SELECT COUNT(*) FROM users")
+	if err != nil {
+		return err
+	}
+	if dev || n > 0 {
+		return nil
+	}
+	password := os.Getenv("KANBAN_ADMIN_PASS")
+	if len(password) < 12 || len(password) > 72 || strings.TrimSpace(password) == "" || password == "请替换为你的初始密码" {
+		return errors.New("首次生产启动需设置 KANBAN_ADMIN_PASS（12–72 字节的非默认密码）")
+	}
+	return nil
 }

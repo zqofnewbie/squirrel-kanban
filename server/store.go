@@ -15,7 +15,8 @@ var schemaSQL string
 // Store 封装全部数据库访问。SQLite 采用 WAL 且单写连接，
 // 避免 "database is locked"；读取走同一连接池，规模足够。
 type Store struct {
-	db *sql.DB
+	db   *sql.DB
+	path string
 }
 
 func openStore(path string) (*Store, error) {
@@ -36,7 +37,24 @@ func openStore(path string) (*Store, error) {
 	if _, err := db.Exec(schemaSQL); err != nil {
 		return nil, fmt.Errorf("执行 schema 失败: %w", err)
 	}
-	return &Store{db: db}, nil
+	s := &Store{db: db, path: path}
+	if err := s.migrateCardPins(); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if err := s.migrateColumnColors(); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if err := s.migrateShareRecords(); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if err := s.migrateWorkspaces(); err != nil {
+		db.Close()
+		return nil, err
+	}
+	return s, nil
 }
 
 func filepathToURL(p string) string {

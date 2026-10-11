@@ -1,10 +1,20 @@
-import { useMemo, useRef, useState } from 'react'
+import { boardCollision, cardDropAnimation } from './boardDrag'
+import ColumnDragPreview, { captureColumn } from './ColumnDragPreview'
+import { useLanguage } from './useLanguage'
+import { t } from './i18n'
+import Icon from './Icon'
+import { useDeferredValue, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
-  closestCorners,
+  closestCenter,
+  pointerWithin,
+  rectIntersection,
+  defaultDropAnimationSideEffects,
+  type CollisionDetection,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -21,7 +31,8 @@ import { Button, ConfirmDialog, Empty, cx } from './ui'
 
 type DragData = { type: 'card' | 'column'; columnId?: number }
 
-export default function Board() {
+export default function Board({ zoom = 1, height }: { zoom?: number; height?: number }) {
+  useLanguage()
   const board = useStore((s) => s.board)!
   const search = useStore((s) => s.search)
   const moveCardLocal = useStore((s) => s.moveCardLocal)
@@ -30,10 +41,13 @@ export default function Board() {
   const setOpenCard = useStore((s) => s.setOpenCard)
 
   const [activeCard, setActiveCard] = useState<Card | null>(null)
+  const [columnSnapshot, setColumnSnapshot] = useState<ReturnType<typeof captureColumn> | null>(null)
   const [activeColumn, setActiveColumn] = useState<number | null>(null)
   const [colMenu, setColMenu] = useState<{ kind: 'clear' | 'delete'; id: number } | null>(null)
   const [addingCol, setAddingCol] = useState(false)
+  const [savingColumn, setSavingColumn] = useState(false)
   const [colDraft, setColDraft] = useState('')
+  const [dragWidth, setDragWidth] = useState(266)
   const originColumn = useRef<number | null>(null)
 
   const sensors = useSensors(
@@ -41,7 +55,7 @@ export default function Board() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  const keyword = search.trim().toLowerCase()
+  const keyword = useDeferredValue(search.trim().toLowerCase())
 
   // 搜索命中的卡片 id 集合（为空表示不筛选）
   const dimmed = useMemo(() => {
@@ -58,17 +72,27 @@ export default function Board() {
 
   const columns = board.columns
 
+  const cardColumns = useMemo(() => new Map(columns.flatMap(col => col.cards.map(card => [card.id, col.id] as const))), [columns])
+
   function resolveColumnId(id: string | number): number | null {
     if (typeof id === 'string' && id.startsWith('col:')) return Number(id.slice(4))
     const cardId = Number(id)
-    for (const col of columns) if (col.cards.some((c) => c.id === cardId)) return col.id
-    return null
+    return cardColumns.get(cardId) ?? null
   }
 
+  // Resolve a column first, then its cards: parent columns must not compete
+  // with their own children as equally ranked drop targets.
+  const collisionDetection = boardCollision
+
   function onDragStart(e: DragStartEvent) {
+    const rect = e.active.rect.current.initial
+    if (rect) setDragWidth(rect.width / zoom)
     const data = e.active.data.current as DragData | undefined
     if (data?.type === 'column') {
-      setActiveColumn(Number(String(e.active.id).replace('col:', '')))
+      const id = Number(String(e.active.id).replace('col:', ''))
+      const element = document.querySelector<HTMLElement>(`[data-column-id="${id}"]`)
+      setColumnSnapshot(element ? captureColumn(element, zoom) : null)
+      setActiveColumn(id)
       return
     }
     const id = Number(e.active.id)
@@ -98,7 +122,11 @@ export default function Board() {
     let index = target.cards.length
     if (typeof over.id === 'number') {
       const overIndex = target.cards.findIndex((c) => c.id === over.id)
-      if (overIndex >= 0) index = overIndex
+      if (overIndex >= 0) {
+        const translated = active.rect.current.translated
+        const below = translated && translated.top > over.rect.top + over.rect.height / 2
+        index = overIndex + (below ? 1 : 0)
+      }
     }
     moveCardLocal(activeId, to, index)
   }
@@ -125,8 +153,8 @@ export default function Board() {
       if (toIdx === fromIdx) return
       const order = columns.map((c) => c.id).filter((id) => id !== colId)
       order.splice(toIdx, 0, colId)
-      await api.moveColumn(colId, order[toIdx + 1] ?? 0).catch(() => {})
-      await reloadBoard()
+      useStore.setState(s => s.board?.id === board.id ? { board: { ...s.board, columns: order.map(id => s.board!.columns.find(c => c.id === id)!) } } : {})
+      try { await api.moveColumn(colId, order[toIdx + 1] ?? 0) } catch { await reloadBoard() }
       return
     }
 
@@ -160,12 +188,11 @@ export default function Board() {
     const finalList = useStore.getState().board?.columns.find((c) => c.id === col)?.cards ?? []
     const finalIdx = finalList.findIndex((c) => c.id === cardId)
     const beforeId = finalIdx >= 0 && finalIdx + 1 < finalList.length ? finalList[finalIdx + 1].id : 0
-    const from = originColumn.current
     originColumn.current = null
 
     try {
-      await api.moveCard(cardId, col, beforeId)
-      if (from && from !== col) void reloadBoard()
+      const saved = await api.moveCard(cardId, col, beforeId)
+      if (useStore.getState().board?.id === board.id) updateCardLocal(saved)
     } catch {
       await reloadBoard()
     }
@@ -174,33 +201,28 @@ export default function Board() {
   // ---------- 操作 ----------
 
   async function addCard(columnId: number, title: string) {
-    try {
-      const c = await api.createCard(columnId, title)
-      useStore.getState().addCardLocal(c)
-    } catch {
-      /* 忽略 */
-    }
+    const c = await api.createCard(columnId, title)
+    useStore.getState().addCardLocal(c)
   }
 
   async function renameCard(id: number, title: string) {
-    const prev = columns.flatMap((c) => c.cards).find((c) => c.id === id)
-    if (!prev) return
-    updateCardLocal({ ...prev, title })
-    try {
-      await api.updateCard(id, { title })
-    } catch {
-      void reloadBoard()
-    }
+    const fresh=await api.updateCard(id,{title})
+    updateCardLocal(fresh)
   }
 
   async function renameColumn(id: number, name: string) {
-    await api.updateColumn(id, { name }).catch(() => {})
-    void reloadBoard()
+    await api.updateColumn(id, { name })
+    await reloadBoard()
   }
 
   async function setWip(id: number, wip_limit: number) {
-    await api.updateColumn(id, { wip_limit }).catch(() => {})
-    void reloadBoard()
+    await api.updateColumn(id, { wip_limit })
+    await reloadBoard()
+  }
+
+  async function setColumnColor(id: number, color: string) {
+    const saved = await api.updateColumn(id, { color })
+    useStore.setState(s => s.board?.id === board.id ? { board: { ...s.board, columns: s.board.columns.map(col => col.id === id ? { ...col, ...saved } : col) } } : {})
   }
 
   async function clearColumn(id: number) {
@@ -219,22 +241,25 @@ export default function Board() {
     const col = columns.find((c) => c.id === colMenu.id)
     if (!col) return
     if (colMenu.kind === 'clear') {
-      for (const c of col.cards) await api.updateCard(c.id, { archived: true }).catch(() => {})
-      void reloadBoard()
+      await api.archiveColumn(col.id)
+      await reloadBoard()
     } else {
       if (columns.length <= 1) return
-      await api.deleteColumn(col.id).catch(() => {})
+      await api.deleteColumn(col.id)
       void reloadBoard()
     }
   }
 
   async function submitColumn() {
     const name = colDraft.trim()
-    if (!name) return
-    setColDraft('')
-    setAddingCol(false)
-    await api.createColumn(board.id, name).catch(() => {})
-    void reloadBoard()
+    if (!name || savingColumn) return
+    setSavingColumn(true)
+    try {
+      await api.createColumn(board.id, name)
+      setColDraft('')
+      setAddingCol(false)
+      await reloadBoard()
+    } catch {} finally { setSavingColumn(false) }
   }
 
   const totalCards = columns.reduce((n, c) => n + c.cards.length, 0)
@@ -242,7 +267,7 @@ export default function Board() {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCorners}
+      collisionDetection={collisionDetection}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
@@ -254,8 +279,8 @@ export default function Board() {
       }}
     >
       <div
-        className="scroll-thin flex h-full gap-3 overflow-x-auto px-4 pb-4 pt-1"
-        style={{ alignItems: 'stretch' }}
+        className="kanban-columns flex gap-3"
+        style={{ alignItems: 'stretch', height: height ?? '100%' }}
       >
         <SortableContext
           items={columns.map((c) => `col:${c.id}`)}
@@ -266,10 +291,13 @@ export default function Board() {
               key={col.id}
               col={keyword ? { ...col, cards: col.cards.filter((c) => !dimmed.has(c.id)) } : col}
               dimmed={dimmed}
+              totalCount={col.cards.length}
+              filterText={keyword}
               onOpenCard={setOpenCard}
               onRenameCard={renameCard}
               onAddCard={addCard}
               onRenameColumn={renameColumn}
+              onSetColor={setColumnColor}
               onSetWip={setWip}
               onClearColumn={clearColumn}
               onDeleteColumn={deleteColumn}
@@ -283,7 +311,9 @@ export default function Board() {
               <input
                 autoFocus
                 value={colDraft}
-                placeholder="新列表名称，回车创建"
+                disabled={savingColumn}
+                aria-label={t("新列表名称")}
+                placeholder={t("新列表名称，回车创建")}
                 onChange={(e) => setColDraft(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.nativeEvent.isComposing) submitColumn()
@@ -302,10 +332,10 @@ export default function Board() {
                   size="sm"
                   variant="primary"
                   onMouseDown={(e) => e.preventDefault()}
+                  disabled={savingColumn || !colDraft.trim()}
                   onClick={submitColumn}
                 >
-                  创建
-                </Button>
+                  {t("创建")} </Button>
                 <Button
                   size="sm"
                   onMouseDown={(e) => e.preventDefault()}
@@ -314,48 +344,46 @@ export default function Board() {
                     setAddingCol(false)
                   }}
                 >
-                  取消
-                </Button>
+                  {t("取消")} </Button>
               </div>
             </div>
           ) : (
             <button
               onClick={() => setAddingCol(true)}
-              className="w-full rounded-xl bg-white/60 px-3 py-2 text-left text-[12.5px] opacity-70 shadow-card hover:bg-white hover:opacity-100 dark:bg-white/[0.06] dark:hover:bg-white/[0.1]"
+              className="add-column-button w-full rounded-xl bg-white/60 px-3 py-2 text-left text-[12.5px] opacity-70 shadow-card hover:bg-white hover:opacity-100 dark:bg-white/[0.06] dark:hover:bg-white/[0.1]"
             >
-              ＋ 添加列表
-            </button>
+              <Icon name="plus" size={16} />{t("添加列表")} </button>
           )}
         </div>
       </div>
 
       <ConfirmDialog
         open={colMenu?.kind === 'clear'}
-        title="归档全部卡片"
+        title={t("归档全部卡片")}
         message={
           colMenu
-            ? `把「${columns.find((c) => c.id === colMenu.id)?.name}」下的全部卡片移入归档箱？之后可以在看板菜单的归档箱里恢复。`
+            ? t("把「{0}」下的全部卡片移入归档箱？之后可以在看板菜单的归档箱里恢复。", [columns.find((c) => c.id === colMenu.id)?.name])
             : ''
         }
-        okText="归档"
+        okText={t("归档")}
         onOK={doColumnAction}
         onClose={() => setColMenu(null)}
       />
       <ConfirmDialog
         open={colMenu?.kind === 'delete'}
         danger
-        title="删除列表"
+        title={t("删除列表")}
         message={
           colMenu
             ? (() => {
                 const col = columns.find((c) => c.id === colMenu.id)
                 return col?.cards.length
-                  ? `删除「${col.name}」会一并删除其中 ${col.cards.length} 张卡片，此操作不可恢复。`
-                  : `确定删除列表「${col?.name}」？`
+                  ? t("删除「{0}」会一并删除其中 {1} 张卡片，此操作不可恢复。", [col.name, col.cards.length])
+                  : t("确定删除列表「{0}」？", [col?.name])
               })()
             : ''
         }
-        okText="删除"
+        okText={t("删除")}
         onOK={doColumnAction}
         onClose={() => setColMenu(null)}
       />
@@ -363,26 +391,25 @@ export default function Board() {
       {totalCards === 0 && columns.length <= 3 && (
         <div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center px-8">
           <div className="w-[320px]">
-            <Empty text="这个看板还没有卡片，点列表下方的「添加卡片」开始" />
+            <Empty text={board.columns.length ? t("这个看板还没有卡片，点列表下方的「添加卡片」开始") : t("先添加一个列表，再开始创建卡片")} />
           </div>
         </div>
       )}
 
-      <DragOverlay dropAnimation={{ duration: 180, easing: 'cubic-bezier(0.2,0,0,1)' }}>
+      {createPortal(<DragOverlay adjustScale={false} dropAnimation={cardDropAnimation}>
         {activeCard ? (
-          <div className="w-[270px] rotate-2 rounded-[10px] shadow-lift">
-            <CardTile card={activeCard} dimmed={false} onOpen={() => {}} onRename={() => {}} />
+          <div className="card-drag-preview rounded-[10px]" style={{ zoom, width: dragWidth }}>
+            <CardTile overlay card={activeCard} dimmed={false} onOpen={() => {}} onRename={async () => {}} />
           </div>
-        ) : activeColumn !== null ? (
-          <div className="w-[286px] rounded-xl bg-white/90 px-3 py-2 text-[13px] font-medium shadow-lift dark:bg-[#2A2A2E]/90">
-            {columns.find((c) => c.id === activeColumn)?.name}
-          </div>
+        ) : activeColumn !== null && columnSnapshot ? (
+          <ColumnDragPreview snapshot={columnSnapshot} zoom={zoom} />
         ) : null}
-      </DragOverlay>
+      </DragOverlay>, document.body)}
     </DndContext>
   )
 }
 
 export function BoardShell({ children }: { children: React.ReactNode }) {
+  useLanguage()
   return <div className={cx('relative h-full')}>{children}</div>
 }

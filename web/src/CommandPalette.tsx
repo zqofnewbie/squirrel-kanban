@@ -1,15 +1,17 @@
+import { useLanguage } from './useLanguage'
+import { t } from './i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { useStore } from './store'
 import { Modal, cx } from './ui'
 
 export default function CommandPalette() {
+  const language = useLanguage()
   const open = useStore((s) => s.paletteOpen)
   const setOpen = useStore((s) => s.setPalette)
   const board = useStore((s) => s.board)
   const boards = useStore((s) => s.boards)
   const openBoard = useStore((s) => s.openBoard)
   const setOpenCard = useStore((s) => s.setOpenCard)
-  const setUsersOpen = useStore((s) => s.setUsersOpen)
   const [q, setQ] = useState('')
   const [sel, setSel] = useState(0)
 
@@ -31,11 +33,10 @@ export default function CommandPalette() {
     }
     boards.forEach((b) => {
       if (kw && !b.name.toLowerCase().includes(kw)) return
-      out.push({ label: b.name, hint: '切换看板', run: () => void openBoard(b.id) })
+      out.push({ label: b.name, hint: t("切换看板"), run: () => void openBoard(b.id) })
     })
-    out.push({ label: '用户管理', hint: '仅管理员', run: () => setUsersOpen(true) })
     return out.slice(0, 40)
-  }, [q, board, boards, openBoard, setOpenCard, setUsersOpen])
+  }, [q, board, boards, openBoard, setOpenCard, language])
 
   useEffect(() => setSel(0), [q])
   useEffect(() => {
@@ -50,7 +51,7 @@ export default function CommandPalette() {
   }
 
   return (
-    <Modal open={open} onClose={() => setOpen(false)} title="搜索卡片 / 跳转" width={520}>
+    <Modal open={open} onClose={() => setOpen(false)} title={t("搜索卡片 / 跳转")} width={520}>
       <input
         autoFocus
         value={q}
@@ -64,16 +65,16 @@ export default function CommandPalette() {
             e.preventDefault()
             setSel((s) => Math.max(s - 1, 0))
           }
-          if (e.key === 'Enter') {
+          if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
             e.preventDefault()
             choose(sel)
           }
         }}
-        placeholder="输入卡片标题或看板名"
+        placeholder={t("输入卡片标题或看板名")}
         className="mb-2 h-10 w-full rounded-lg border border-black/[0.12] bg-white px-3 text-[13.5px] outline-none focus:border-brand-400 dark:border-white/[0.14] dark:bg-white/[0.06]"
       />
       <div className="scroll-thin max-h-[46vh] overflow-y-auto">
-        {items.length === 0 && <div className="px-1 py-6 text-center text-[12.5px] opacity-40">没有匹配项</div>}
+        {items.length === 0 && <div className="px-1 py-6 text-center text-[12.5px] opacity-40">{t("没有匹配项")}</div>}
         {items.map((it, i) => (
           <button
             key={i}

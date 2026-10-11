@@ -6,7 +6,7 @@ tmp_dir = ".air.tmp"
 [build]
   # 输出统一带 .exe：Linux/macOS 不认扩展名，Windows 必须有，两边都能跑
   cmd = "go build -o .air.tmp/kanban-dev.exe ."
-  bin = ".air.tmp/kanban-dev.exe -dev -addr 127.0.0.1:8090 -data ../.dev"
+  bin = ".air.tmp/kanban-dev.exe"
   include_ext = ["go", "sql"]
   exclude_dir = ["../web", "../.dev", ".air.tmp", "../data"]
   exclude_regex = ["_test\\.go"]

@@ -1,25 +1,35 @@
+import { moveBoardCard } from './boardDrag'
+import { preference, savePreference, themeKey, detectTheme } from './i18n'
+import { t } from './i18n'
 import { create } from 'zustand'
 import { api } from './api'
-import type { Board, BoardDetail, Card, ColumnWithCards, ServerEvent, User } from './types'
+import type { Board, BoardDetail, Card, ColumnWithCards, ServerEvent, User, Workspace } from './types'
+
+export type CardSection = 'comments' | 'attachments'
 
 export type Theme = 'light' | 'dark'
 
 interface State {
+  page: 'boards' | 'shares' | 'administration'
+  setPage: (page: 'boards' | 'shares' | 'administration') => void
   me: User | null
   actor: string
   ready: boolean
   theme: Theme
 
+  workspaces: Workspace[]
+  workspaceId: number | null
+  loadWorkspaces: () => Promise<void>
+  switchWorkspace: (id: number) => Promise<void>
   boards: Board[]
   board: BoardDetail | null
   loading: boolean
   error: string | null
 
   openCardId: number | null
+  openCardSection: CardSection | null
   search: string
   paletteOpen: boolean
-  usersOpen: boolean
-  boardPickerOpen: boolean
   archiveOpen: boolean
 
   setTheme: (t: Theme) => void
@@ -27,9 +37,10 @@ interface State {
   login: (u: string, p: string) => Promise<void>
   logout: () => Promise<void>
   setMe: (u: User | null) => void
+  expireSession: () => void
 
   loadBoards: () => Promise<void>
-  openBoard: (id: number) => Promise<void>
+  openBoard: (id: number, navigate?: boolean) => Promise<void>
   reloadBoard: () => Promise<void>
   createBoard: (name: string) => Promise<number>
   patchBoard: (v: Record<string, unknown>) => Promise<void>
@@ -43,46 +54,52 @@ interface State {
   removeCardLocal: (id: number) => void
   moveCardLocal: (cardId: number, toColumn: number, index: number) => void
 
-  setOpenCard: (id: number | null) => void
+  setOpenCard: (id: number | null, section?: CardSection) => void
   setSearch: (s: string) => void
   setPalette: (v: boolean) => void
-  setUsersOpen: (v: boolean) => void
-  setBoardPicker: (v: boolean) => void
   setArchiveOpen: (v: boolean) => void
 }
 
-const themeKey = 'kanban.theme'
+let boardRequest = 0
+let reloadRequest = 0
+let workspaceRequest = 0
 
 function initialTheme(): Theme {
-  const saved = localStorage.getItem(themeKey)
-  if (saved === 'dark' || saved === 'light') return saved
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  const saved = preference(themeKey)
+  return detectTheme(saved, matchMedia('(prefers-color-scheme: dark)').matches)
 }
-
-function applyTheme(t: Theme) {
-  document.documentElement.classList.toggle('dark', t === 'dark')
-  localStorage.setItem(themeKey, t)
+function applyTheme(theme: Theme) {
+  document.documentElement.classList.toggle('dark', theme === 'dark')
 }
 
 export const useStore = create<State>((set, get) => ({
+  page: 'boards',
+  setPage: page => {
+ const path = page === 'administration' ? '/administration' : page === 'shares' ? '/shares' : '/'
+ if (location.pathname !== path) history.pushState(null,'',path)
+ ++boardRequest
+ set({page,openCardId:null,search:'',loading:false})
+ },
   me: null,
   actor: '',
   ready: false,
   theme: initialTheme(),
 
+  workspaces: [],
+  workspaceId: null,
   boards: [],
   board: null,
   loading: false,
   error: null,
 
   openCardId: null,
+  openCardSection: null,
   search: '',
   paletteOpen: false,
-  usersOpen: false,
-  boardPickerOpen: false,
   archiveOpen: false,
 
   setTheme: (t) => {
+    savePreference(themeKey, t)
     applyTheme(t)
     set({ theme: t })
   },
@@ -91,58 +108,91 @@ export const useStore = create<State>((set, get) => ({
     applyTheme(get().theme)
     try {
       const me = await api.me()
-      const boards = await api.listBoards()
-      set({ me: me.user, actor: me.actor, boards, ready: true })
-      if (boards.length) await get().openBoard(boards[0].id)
-      else {
-        const id = await get().createBoard('我的第一个看板')
-        await get().openBoard(id)
-      }
-    } catch {
-      set({ ready: true, me: null })
+      set({ me: me.user, actor: me.actor })
+      await get().loadWorkspaces()
+      set({ ready: true })
+    } catch (error: any) {
+      set({ ready: true, error: error?.message ?? t("加载失败，请重试") })
     }
   },
 
   login: async (username, password) => {
+    const destination=location.pathname==='/administration'?'administration':location.pathname==='/shares'?'shares':'boards'
     const r = await api.login(username, password)
-    set({ me: r.user, actor: r.actor })
-    const boards = await api.listBoards()
-    set({ boards })
-    if (boards.length) await get().openBoard(boards[0].id)
-    else {
-      const id = await get().createBoard('我的第一个看板')
-      await get().openBoard(id)
-    }
+    set({ me: r.user, actor: r.actor, loading: true })
+    await get().loadWorkspaces()
+    get().setPage(destination)
   },
 
   logout: async () => {
+    ++boardRequest
     await api.logout().catch(() => {})
-    set({ me: null, actor: '', board: null, boards: [], openCardId: null })
+    ++workspaceRequest
+    set({ me: null, actor: '', board: null, boards: [], workspaces: [], workspaceId: null, openCardId: null })
   },
 
   setMe: (u) => set({ me: u }),
+  expireSession: () => {
+    ++boardRequest; ++reloadRequest; ++workspaceRequest
+    set({ me: null, actor: '', board: null, boards: [], workspaces: [], workspaceId: null, openCardId: null, archiveOpen: false, paletteOpen: false, loading: false, ready: true })
+  },
 
-  loadBoards: async () => set({ boards: await api.listBoards() }),
+  loadWorkspaces: async () => {
+    const workspaces = await api.workspaces()
+    set({ workspaces })
+    const selected = get().workspaceId ?? Number(localStorage.getItem(`squirrel.workspace.${get().me?.id}`))
+    const id = workspaces.find(w => w.id === selected)?.id ?? workspaces[0]?.id
+    if (id) await get().switchWorkspace(id)
+    else { ++boardRequest; ++workspaceRequest; set({ workspaceId: null, boards: [], board: null, openCardId: null, loading: false }) }
+  },
+  switchWorkspace: async id => {
+    const version = ++workspaceRequest
+    ++boardRequest; ++reloadRequest
+    set({ workspaceId: id, board: null, boards: [], openCardId: null, archiveOpen: false, search: '', loading: true, error: null })
+    localStorage.setItem(`squirrel.workspace.${get().me?.id}`, String(id))
+    try {
+      const boards = await api.listBoards(id)
+      if (version !== workspaceRequest) return
+      set({ boards, loading: false })
+      if (boards.length) await get().openBoard(boards.find(b => b.id === Number(localStorage.getItem('kanban.board')))?.id ?? boards[0].id, false)
+    } catch (e: any) { if (version === workspaceRequest) set({ loading: false, error: e.message }) }
+  },
+  loadBoards: async () => {
+    const id = get().workspaceId
+    if (!id) return
+    const boards = await api.listBoards(id)
+    if (get().workspaceId === id) set({ boards })
+  },
 
-  openBoard: async (id) => {
-    set({ loading: true, error: null })
+  openBoard: async (id, navigate = true) => {
+    if (navigate) get().setPage('boards')
+    set({ loading: true, error: null, search: '', openCardId: null })
+    const request = ++boardRequest
     try {
       const board = await api.getBoard(id)
+      if (request !== boardRequest) return
+      localStorage.setItem('kanban.board', String(id))
       set({ board, loading: false, openCardId: null })
     } catch (e: any) {
-      set({ loading: false, error: e?.message ?? '加载看板失败' })
+      if (request !== boardRequest) return
+      set({ loading: false, error: e?.message ?? t("加载看板失败") })
     }
   },
 
   reloadBoard: async () => {
     const id = get().board?.id
     if (!id) return
-    const board = await api.getBoard(id)
-    set({ board })
+    const version=++reloadRequest
+    try {
+      const board = await api.getBoard(id)
+      if (version===reloadRequest && get().board?.id === id) set({ board, error: null })
+    } catch (e: any) { if (get().board?.id === id) set({ error: e?.message ?? t("刷新失败，请重试") }) }
   },
 
   createBoard: async (name) => {
-    const b = await api.createBoard(name)
+    const workspaceId = get().workspaceId
+    if (!workspaceId) throw new Error(t("请先选择工作空间"))
+    const b = await api.createBoard(name, workspaceId)
     set({ boards: [b, ...get().boards] })
     return b.id
   },
@@ -160,11 +210,8 @@ export const useStore = create<State>((set, get) => ({
     const boards = get().boards.filter((b) => b.id !== id)
     set({ boards })
     if (get().board?.id === id) {
-      if (boards.length) await get().openBoard(boards[0].id)
-      else {
-        const nid = await get().createBoard('我的第一个看板')
-        await get().openBoard(nid)
-      }
+      if (boards.length) await get().openBoard(boards.find(b => b.id === Number(localStorage.getItem('kanban.board')))?.id ?? boards[0].id)
+      else set({ board: null, openCardId: null })
     }
   },
 
@@ -180,6 +227,7 @@ export const useStore = create<State>((set, get) => ({
       return
     }
     // 结构变更（列/标签）直接整体刷新，操作简单可靠
+    if (e.board_id && e.board_id !== board.id) return
     if (e.type === 'board.structure') {
       void state.reloadBoard()
       return
@@ -213,7 +261,7 @@ export const useStore = create<State>((set, get) => ({
             if (col.id !== c.column_id) return col
             // 服务端把新卡片放到列首（position 最小），这里按 position 排序保证位置正确
             const cards = [...col.cards.filter((x) => x.id !== c.id), c].sort(
-              (a, b) => a.position - b.position,
+              (a, b) => Number(!!b.pinned) - Number(!!a.pinned) || a.position - b.position,
             )
             return { ...col, cards }
           }),
@@ -242,7 +290,7 @@ export const useStore = create<State>((set, get) => ({
       }))
       const target = columns.find((col) => col.id === c.column_id)
       if (!target) return s
-      target.cards = [...target.cards, c].sort((a, b) => a.position - b.position)
+      target.cards = [...target.cards, c].sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned) || a.position - b.position)
       return { board: { ...s.board, columns } }
     }),
 
@@ -260,28 +308,19 @@ export const useStore = create<State>((set, get) => ({
       }
     }),
 
-  moveCardLocal: (cardId, toColumn, index) =>
-    set((s) => {
-      if (!s.board) return s
-      let moving: Card | undefined
-      const columns: ColumnWithCards[] = s.board.columns.map((col) => {
-        const found = col.cards.find((c) => c.id === cardId)
-        if (found) moving = { ...found }
-        return { ...col, cards: col.cards.filter((c) => c.id !== cardId) }
-      })
-      if (!moving) return s
-      const target = columns.find((c) => c.id === toColumn)
-      if (!target) return s
-      const cards = [...target.cards]
-      cards.splice(Math.max(0, Math.min(index, cards.length)), 0, { ...moving!, column_id: toColumn })
-      target.cards = cards
-      return { board: { ...s.board, columns } }
-    }),
+  moveCardLocal: (cardId, toColumn, index) => set(s => s.board ? {board:moveBoardCard(s.board,cardId,toColumn,index)} : {}),
 
-  setOpenCard: (id) => set({ openCardId: id }),
+  setOpenCard: (id, section) => set({ openCardId: id, openCardSection: section ?? null }),
   setSearch: (s) => set({ search: s }),
   setPalette: (v) => set({ paletteOpen: v }),
-  setUsersOpen: (v) => set({ usersOpen: v }),
-  setBoardPicker: (v) => set({ boardPickerOpen: v }),
   setArchiveOpen: (v) => set({ archiveOpen: v }),
 }))
+
+
+const systemTheme = matchMedia('(prefers-color-scheme: dark)')
+systemTheme.addEventListener('change', event => {
+ if (preference(themeKey)) return
+ const theme = event.matches ? 'dark' : 'light'
+ applyTheme(theme)
+ useStore.setState({ theme })
+})

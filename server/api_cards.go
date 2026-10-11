@@ -44,6 +44,7 @@ func (s *Server) handleUpdateCard(w http.ResponseWriter, r *http.Request) {
 		DueDate     *string `json:"due_date"`
 		Cover       *string `json:"cover"`
 		Archived    *bool   `json:"archived"`
+		Pinned      *bool   `json:"pinned"`
 	}
 	if err := decode(r, &req); err != nil {
 		writeErr(w, http.StatusBadRequest, "请求格式不正确")
@@ -55,7 +56,7 @@ func (s *Server) handleUpdateCard(w http.ResponseWriter, r *http.Request) {
 	}
 	c, err := s.store.UpdateCard(id, CardPatch{
 		Title: req.Title, Description: req.Description,
-		DueDate: req.DueDate, Cover: req.Cover, Archived: req.Archived,
+		DueDate: req.DueDate, Cover: req.Cover, Archived: req.Archived, Pinned: req.Pinned,
 	})
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "更新失败")
@@ -102,10 +103,16 @@ func (s *Server) handleDeleteCard(w http.ResponseWriter, r *http.Request) {
 	id := pathID(r, "id")
 	u := currentUser(r)
 	bid, _ := s.store.boardIDByCard(id)
+	paths, err := s.store.attachmentPaths("card", id)
+	if err != nil {
+		writeErr(w, http.StatusInternalServerError, "读取附件失败")
+		return
+	}
 	if err := s.store.DeleteCard(id); err != nil {
 		writeErr(w, http.StatusInternalServerError, "删除失败")
 		return
 	}
+	s.removeAttachmentFiles(paths)
 	s.publish(bid, u.Actor, "card.deleted", map[string]int64{"id": id})
 	writeOK(w, nil)
 }
@@ -155,7 +162,10 @@ func (s *Server) handleCreateChecklist(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Title string `json:"title"`
 	}
-	_ = decode(r, &req)
+	if err := decode(r, &req); err != nil || strings.TrimSpace(req.Title) == "" || len([]rune(req.Title)) > 120 {
+		writeErr(w, 400, "清单名称不能为空，最多 120 字")
+		return
+	}
 	cl, err := s.store.CreateChecklist(cardID, strings.TrimSpace(req.Title))
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "创建清单失败")
@@ -170,8 +180,15 @@ func (s *Server) handleUpdateChecklist(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Title string `json:"title"`
 	}
-	_ = decode(r, &req)
-	cardID, _ := s.store.checklistCard(id)
+	if err := decode(r, &req); err != nil || strings.TrimSpace(req.Title) == "" || len([]rune(req.Title)) > 120 {
+		writeErr(w, 400, "清单名称不能为空，最多 120 字")
+		return
+	}
+	cardID, err := s.store.checklistCard(id)
+	if err != nil {
+		writeErr(w, 404, "清单不存在")
+		return
+	}
 	if err := s.store.UpdateChecklist(id, strings.TrimSpace(req.Title)); err != nil {
 		writeErr(w, http.StatusInternalServerError, "更新失败")
 		return
@@ -259,16 +276,22 @@ const maxUpload = 32 << 20
 func (s *Server) handleUploadAttachment(w http.ResponseWriter, r *http.Request) {
 	cardID := pathID(r, "id")
 	u := currentUser(r)
+	r.Body = http.MaxBytesReader(w, r.Body, maxUpload+(1<<20))
 	if err := r.ParseMultipartForm(maxUpload); err != nil {
 		writeErr(w, http.StatusBadRequest, "上传内容过大或格式错误")
 		return
 	}
+	defer r.MultipartForm.RemoveAll()
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, "缺少文件")
 		return
 	}
 	defer file.Close()
+	if header.Size > maxUpload {
+		writeErr(w, http.StatusRequestEntityTooLarge, "附件不能超过 32 MB")
+		return
+	}
 
 	name := sanitizeFilename(header.Filename)
 	stored, err := randomToken(12)
@@ -289,6 +312,7 @@ func (s *Server) handleUploadAttachment(w http.ResponseWriter, r *http.Request) 
 	}
 	att, err := s.store.CreateAttachment(cardID, name, "/files/"+stored+ext, header.Size)
 	if err != nil {
+		removeFile(dest)
 		writeErr(w, http.StatusInternalServerError, "保存记录失败")
 		return
 	}
@@ -308,8 +332,7 @@ func (s *Server) handleDeleteAttachment(w http.ResponseWriter, r *http.Request) 
 		writeErr(w, http.StatusInternalServerError, "删除失败")
 		return
 	}
-	removeFile(filepath.Join(s.dataDir, filepath.FromSlash(strings.TrimPrefix(a.Path, "/files/"))))
-	removeFile(filepath.Join(s.dataDir, "files", filepath.Base(a.Path)))
+	s.removeAttachmentFiles([]string{a.Path})
 	s.publishCard(a.CardID, u.Actor)
 	writeOK(w, nil)
 }

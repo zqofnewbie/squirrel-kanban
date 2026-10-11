@@ -16,6 +16,9 @@ type passwordReq struct {
 }
 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
+	if !validOrigin(w, r) {
+		return
+	}
 	var req loginReq
 	if err := decode(r, &req); err != nil {
 		writeErr(w, http.StatusBadRequest, "请求格式不正确")
@@ -25,6 +28,12 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeErr(w, http.StatusUnauthorized, mapErr(err))
 		return
+	}
+	if u.Role == "admin" {
+		if err := s.store.ensureWelcomeBoard(u.ID, r.Header.Get("Accept-Language")); err != nil {
+			writeErr(w, 500, "创建模板看板失败，请重试")
+			return
+		}
 	}
 	sess, err := s.store.CreateSession(u.ID, r.UserAgent())
 	if err != nil {
@@ -36,6 +45,9 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
+	if !validOrigin(w, r) {
+		return
+	}
 	if c, err := r.Cookie(cookieName); err == nil {
 		s.store.DeleteSession(c.Value)
 	}
@@ -45,6 +57,12 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 	u := currentUser(r)
+	if u.IsAdmin() {
+		if err := s.store.ensureWelcomeBoard(u.ID, r.Header.Get("Accept-Language")); err != nil {
+			writeErr(w, 500, "创建模板看板失败，请重试")
+			return
+		}
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"user": u.User, "actor": u.Actor})
 }
 
@@ -55,8 +73,8 @@ func (s *Server) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "请求格式不正确")
 		return
 	}
-	if len(req.NewPassword) < 4 {
-		writeErr(w, http.StatusBadRequest, "新密码至少 4 位")
+	if len(req.NewPassword) < 8 || len(req.NewPassword) > 72 {
+		writeErr(w, http.StatusBadRequest, "新密码需要 8–72 位")
 		return
 	}
 	if _, err := s.store.Authenticate(u.Username, req.OldPassword); err != nil {

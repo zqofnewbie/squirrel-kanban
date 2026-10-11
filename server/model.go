@@ -24,22 +24,25 @@ type Me struct {
 // ---------- 看板 ----------
 
 type Board struct {
+	WorkspaceID int64  `json:"workspace_id"`
 	ID          int64  `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Background  string `json:"background"`
 	Archived    bool   `json:"archived"`
+	ShareCount  int    `json:"share_count"`
 	CardCount   int    `json:"card_count"`
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`
 }
 
 type Column struct {
-	ID       int64  `json:"id"`
-	BoardID  int64  `json:"board_id"`
-	Name     string `json:"name"`
+	ID       int64   `json:"id"`
+	BoardID  int64   `json:"board_id"`
+	Name     string  `json:"name"`
+	Color    string  `json:"color"`
 	Position float64 `json:"position"`
-	WipLimit int    `json:"wip_limit"`
+	WipLimit int     `json:"wip_limit"`
 }
 
 type ColumnWithCards struct {
@@ -48,26 +51,26 @@ type ColumnWithCards struct {
 }
 
 type Label struct {
-	ID       int64  `json:"id"`
-	BoardID  int64  `json:"board_id"`
-	Name     string `json:"name"`
-	Color    string `json:"color"`
+	ID       int64   `json:"id"`
+	BoardID  int64   `json:"board_id"`
+	Name     string  `json:"name"`
+	Color    string  `json:"color"`
 	Position float64 `json:"position"`
 }
 
 type Checklist struct {
-	ID       int64          `json:"id"`
-	CardID   int64          `json:"card_id"`
-	Title    string         `json:"title"`
-	Position float64        `json:"position"`
+	ID       int64           `json:"id"`
+	CardID   int64           `json:"card_id"`
+	Title    string          `json:"title"`
+	Position float64         `json:"position"`
 	Items    []ChecklistItem `json:"items"`
 }
 
 type ChecklistItem struct {
-	ID          int64  `json:"id"`
-	ChecklistID int64  `json:"checklist_id"`
-	Text        string `json:"text"`
-	Done        bool   `json:"done"`
+	ID          int64   `json:"id"`
+	ChecklistID int64   `json:"checklist_id"`
+	Text        string  `json:"text"`
+	Done        bool    `json:"done"`
 	Position    float64 `json:"position"`
 }
 
@@ -87,19 +90,21 @@ type Card struct {
 	Description string  `json:"description"`
 	Position    float64 `json:"position"`
 	DueDate     string  `json:"due_date,omitempty"`
+	Pinned      bool    `json:"pinned"`
 	Cover       string  `json:"cover,omitempty"`
 	Archived    bool    `json:"archived"`
 	CreatedBy   int64   `json:"created_by,omitempty"`
 	CreatedAt   string  `json:"created_at"`
 	UpdatedAt   string  `json:"updated_at"`
 
-	Labels      []Label     `json:"labels"`
-	Checklists  []Checklist `json:"checklists,omitempty"`
+	Labels      []Label      `json:"labels"`
+	Checklists  []Checklist  `json:"checklists,omitempty"`
 	Attachments []Attachment `json:"attachments,omitempty"`
 
-	ChecklistDone  int `json:"checklist_done"`
-	ChecklistTotal int `json:"checklist_total"`
-	CommentCount   int `json:"attachment_count"`
+	ChecklistDone   int `json:"checklist_done"`
+	ChecklistTotal  int `json:"checklist_total"`
+	AttachmentCount int `json:"attachment_count"`
+	CommentCount    int `json:"comment_count"`
 }
 
 type BoardDetail struct {
