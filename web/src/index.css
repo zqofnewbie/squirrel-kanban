@@ -238,7 +238,10 @@ button:focus-visible, a:focus-visible, [role="button"]:focus-visible { outline: 
 .add-card-button { background: var(--canvas); border: 1px dashed var(--line); box-shadow: none; text-align: center; padding: 9px; font-size: 12px; opacity: 1; color: var(--muted); }
 .add-card-button:hover { color: var(--accent); background: var(--selected); }
 .add-column-button { padding: 13px; border: 1px dashed #cbd5e1; box-shadow: none; background: transparent; }
-.error-banner { margin: 0 30px 12px; padding: 10px; background: #fff0ed; color: #a83f32; border-radius: 8px; font-size: 12px; }
+.error-banner { min-width: 0; flex-shrink: 0; overflow-wrap: anywhere; margin: 0 0 12px; padding: 10px; background: #fff0ed; color: #a83f32; border-radius: 8px; font-size: 12px; }
+/* Unpadded canvas shells own their gutters; nested alerts follow their content width. */
+.board-content > .error-banner, .shared-shell > .error-banner { margin-inline: 30px; }
+@media (max-width: 760px) { .board-content > .error-banner, .shared-shell > .error-banner { margin-inline: 16px; } }
 .error-banner button { margin-left: 14px; text-decoration: underline; }
 .loading-bar { padding: 6px 30px; font-size: 12px; color: var(--muted); }
 .help-list { font-size: 13px; line-height: 1.8; }
