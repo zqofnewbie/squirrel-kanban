@@ -322,7 +322,8 @@ export default function App() {
         ) : (
           <div className="relative grid h-full place-items-center text-[13px]">
             {loading ? <p role="status" className="text-[var(--muted)]">{t("正在加载…")}</p> : error ? <div className="empty-workspace"><h2 role="alert">{error}</h2><Button onClick={() => void useStore.getState().loadWorkspaces()}>{t("重试")}</Button></div> : <div className="empty-workspace">
-              <h2>{workspaceId ? t("从一块新看板开始") : me?.role === "member" ? t("请联系管理员为你分配工作空间。") : t("创建你的第一个工作空间")}</h2>
+              <h2>{workspaceId ? t("从一块新看板开始") : t("未分配工作空间")}</h2>
+              {!workspaceId && <p>{me?.role === "member" ? t("请联系管理员为你分配工作空间。") : t("创建自己的工作空间，或由超级管理员为你分配。")}</p>}
               {workspaceId ? <Button variant="primary" onClick={() => setNewBoardOpen(true)}>{t("新建看板")}</Button> : me?.role !== "member" && <Button variant="primary" onClick={() => useStore.getState().setPage('administration')}>{t("新建工作空间")}</Button>}
             </div>}
           </div>

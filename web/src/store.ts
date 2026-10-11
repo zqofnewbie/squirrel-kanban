@@ -119,7 +119,7 @@ export const useStore = create<State>((set, get) => ({
   login: async (username, password) => {
     const destination=location.pathname==='/administration'?'administration':location.pathname==='/shares'?'shares':'boards'
     const r = await api.login(username, password)
-    set({ me: r.user, actor: r.actor, loading: true })
+    set({ me: r.user, actor: r.actor, loading: true, error: null })
     await get().loadWorkspaces()
     get().setPage(destination)
   },
@@ -128,22 +128,27 @@ export const useStore = create<State>((set, get) => ({
     ++boardRequest
     await api.logout().catch(() => {})
     ++workspaceRequest
-    set({ me: null, actor: '', board: null, boards: [], workspaces: [], workspaceId: null, openCardId: null })
+    set({ me: null, actor: '', board: null, boards: [], workspaces: [], workspaceId: null, openCardId: null, loading: false, error: null })
   },
 
   setMe: (u) => set({ me: u }),
   expireSession: () => {
     ++boardRequest; ++reloadRequest; ++workspaceRequest
-    set({ me: null, actor: '', board: null, boards: [], workspaces: [], workspaceId: null, openCardId: null, archiveOpen: false, paletteOpen: false, loading: false, ready: true })
+    set({ me: null, actor: '', board: null, boards: [], workspaces: [], workspaceId: null, openCardId: null, archiveOpen: false, paletteOpen: false, loading: false, ready: true, error: null })
   },
 
   loadWorkspaces: async () => {
-    const workspaces = await api.workspaces()
-    set({ workspaces })
-    const selected = get().workspaceId ?? Number(localStorage.getItem(`squirrel.workspace.${get().me?.id}`))
-    const id = workspaces.find(w => w.id === selected)?.id ?? workspaces[0]?.id
-    if (id) await get().switchWorkspace(id)
-    else { ++boardRequest; ++workspaceRequest; set({ workspaceId: null, boards: [], board: null, openCardId: null, loading: false }) }
+    set({ loading: true, error: null })
+    try {
+      const workspaces = await api.workspaces()
+      set({ workspaces })
+      const selected = get().workspaceId ?? Number(localStorage.getItem(`squirrel.workspace.${get().me?.id}`))
+      const id = workspaces.find(w => w.id === selected)?.id ?? workspaces[0]?.id
+      if (id) await get().switchWorkspace(id)
+      else { ++boardRequest; ++workspaceRequest; set({ workspaceId: null, boards: [], board: null, openCardId: null, loading: false, error: null }) }
+    } catch (e: any) {
+      set({ loading: false, error: e?.message ?? t("加载失败，请重试") })
+    }
   },
   switchWorkspace: async id => {
     const version = ++workspaceRequest
