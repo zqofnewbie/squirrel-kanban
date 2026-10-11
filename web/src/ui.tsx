@@ -29,7 +29,7 @@ export function Button({ variant = 'ghost', size = 'md', className, ...rest }: B
       'border border-black/[0.12] hover:bg-black/[0.04] dark:border-white/[0.14] dark:hover:bg-white/[0.08]',
     danger: 'border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-950/40',
   }[variant]
-  return <button className={cx(base, sizes, variants, className)} {...rest} />
+  return <button type="button" className={cx(base, sizes, variants, className)} {...rest} />
 }
 
 // ---------- 输入 ----------
@@ -390,6 +390,7 @@ export function MenuItem({
   useLanguage()
   return (
     <button
+      type="button"
       onClick={onClick}
       role="menuitem"
       className={cx(
@@ -406,7 +407,7 @@ export function MenuItem({
 export function Select({ value, options, onChange, disabled, label, className, fullWidth = false }: { className?: string; fullWidth?: boolean; value: number; options: { value: number; label: string; color?: string }[]; onChange: (value: number) => void | Promise<unknown>; disabled?: boolean; label: string }) {
   useLanguage()
   const selected = options.find(option => option.value === value)
-  return <Menu align="left" width={240} matchTriggerWidth={fullWidth} className={cx(fullWidth && "w-full", className)} trigger={(_, toggle) => <button disabled={disabled} aria-label={label} onClick={toggle} className="select-trigger"><span className="truncate">{selected?.label ?? t("选择列表")}</span><Icon name="chevron" size={14} /></button>}>
+  return <Menu align="left" width={240} matchTriggerWidth={fullWidth} className={cx(fullWidth && "w-full", className)} trigger={(_, toggle) => <button type="button" disabled={disabled} aria-label={label} onClick={toggle} className="select-trigger"><span className="truncate">{selected?.label ?? t("选择列表")}</span><Icon name="chevron" size={14} /></button>}>
     {close => <>{options.map(option => <MenuItem key={option.value} onClick={async () => { if (!disabled) { await onChange(option.value); close() } }}><span className="column-color-dot" style={{ background: option.color }} /><span className="min-w-0 flex-1 truncate">{option.label}</span>{option.value === value && <Icon name="check" size={14} />}</MenuItem>)}</>}
   </Menu>
 }
