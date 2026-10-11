@@ -1,3 +1,4 @@
+import { Empty } from './ui'
 import { useLanguage } from './useLanguage'
 import { t } from './i18n'
 import { useEffect, useMemo, useState } from 'react'
@@ -74,7 +75,7 @@ export default function CommandPalette() {
         className="mb-2 h-10 w-full rounded-lg border border-black/[0.12] bg-white px-3 text-[13.5px] outline-none focus:border-brand-400 dark:border-white/[0.14] dark:bg-white/[0.06]"
       />
       <div className="scroll-thin max-h-[46vh] overflow-y-auto">
-        {items.length === 0 && <div className="px-1 py-6 text-center text-[12.5px] opacity-40">{t("没有匹配项")}</div>}
+        {items.length === 0 && <Empty compact text={t("没有匹配项")} />}
         {items.map((it, i) => (
           <button
             key={i}

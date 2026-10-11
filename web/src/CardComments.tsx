@@ -1,3 +1,4 @@
+import { Empty } from './ui'
 import { useLanguage } from './useLanguage'
 import { locale, commentAuthor } from './i18n'
 import { t } from './i18n'
@@ -42,7 +43,7 @@ export default function CardComments({ cardId, shareId, canComment = true }: { c
       <div className="mt-2 flex justify-end"><Button size="sm" variant="primary" type="submit" disabled={busy || !content.trim()}>{busy ? t("发送中…") : t("发表评论")}</Button></div>
     </form>}
     {error && <p role="alert" className="mb-2 text-[12px] text-red-600">{error}</p>}
-    {!comments.length && !error && <p className="text-[12px] text-[var(--muted)]">{t("还没有评论")}</p>}
+    {!comments.length && !error && <Empty compact text={t("还没有评论")} />}
     <ul className="space-y-3">{comments.map(c => <li key={c.id} className="rounded-lg border border-[var(--line)] p-3">
       <div className="mb-2 flex items-center gap-2 text-[11px] text-[var(--muted)]"><span>{commentAuthor(c.author)}</span><time dateTime={c.created_at}>{new Date(c.created_at).toLocaleString(locale())}</time>{!shareId && <button className="ml-auto hover:text-red-600" onClick={() => setDeleting(c.id)}>{t("删除")}</button>}</div>
       <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed">{c.content}</p>

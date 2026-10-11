@@ -1,6 +1,7 @@
 import type { SVGProps } from 'react'
 
 const paths = {
+  empty: <><path d="m4 9 3-5h10l3 5v10H4Z" /><path d="M4 9h5l1.5 3h3L15 9h5M9 4l-1 5M15 4l1 5" /></>,
   grip: <path d="M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01" strokeWidth="3" />,
   panelClose: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16m7-12-4 4 4 4" /></>,
   panelOpen: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16m4-12 4 4-4 4" /></>,

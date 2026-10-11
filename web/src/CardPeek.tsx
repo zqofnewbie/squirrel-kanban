@@ -1,3 +1,4 @@
+import { Empty } from './ui'
 import { useLanguage } from './useLanguage'
 import { locale, commentAuthor } from './i18n'
 import { t } from './i18n'
@@ -60,7 +61,7 @@ export default function CardPeek({ card, kind, onOpen, shareId }: { card: Card; 
     {presence.mounted && createPortal(<div data-motion={presence.phase} aria-hidden={!open || undefined} {...(!open ? { inert: '' } : {})} ref={popup} id={id} role="region" aria-label={isFiles ? t("附件内容预览") : t("评论内容预览")} className="card-peek-panel motion-panel pop" style={{ left: position.left, top: position.top, visibility: position.ready ? 'visible' : 'hidden' }} onMouseEnter={cancelClose} onMouseLeave={closeSoon} onFocus={cancelClose} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget) && e.relatedTarget !== anchor.current) closeSoon() }} onKeyDown={e => { e.stopPropagation(); if (e.key === 'Escape') { setOpen(false); anchor.current?.focus(); cancelClose(); setOpen(false) } }} onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()}>
       <div className="card-peek-heading"><span>{isFiles ? t("附件") : t("最近评论")} <span className="text-[var(--muted)]">{count}</span></span><button onClick={navigate}>{t("查看全部")} <Icon name="external" size={12} /></button></div>
       {loading ? <p role="status" className="card-peek-message">{t("正在读取…")}</p> : error ? <p role="alert" className="card-peek-message">{error}</p> : isFiles ? <ul className="card-peek-files">{attachments.slice(0, 4).map(a => <li key={a.id}><button title={a.name} onClick={() => { setPreview(a); setOpen(false) }}><AttachmentThumbnail attachment={a} shareId={shareId} /><span className="min-w-0 flex-1"><span className="block truncate">{a.name}</span><span className="text-[11px] text-[var(--muted)]">{fileSize(a.size)} · {attachmentKind(a.name) === 'file' ? t("查看文件") : t("点击预览")}</span></span></button></li>)}</ul> : <ul className="card-peek-comments">{comments.slice(0, 3).map(c => <li key={c.id}><div><strong>{commentAuthor(c.author)}</strong><time dateTime={c.created_at}>{new Date(c.created_at).toLocaleString(locale(), { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</time></div><p>{c.content}</p></li>)}</ul>}
-      {!loading && !error && !(isFiles ? attachments.length : comments.length) && <p className="card-peek-message">{t("暂无")}{isFiles ? t("附件") : t("评论")}</p>}
+      {!loading && !error && !(isFiles ? attachments.length : comments.length) && <Empty compact text={t("暂无") + (isFiles ? t("附件") : t("评论"))} />}
     </div>, document.body)}
     <AttachmentViewer attachment={preview} shareId={shareId} onClose={() => setPreview(null)} />
   </span>

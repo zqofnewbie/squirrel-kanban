@@ -819,3 +819,8 @@ html[lang="en-US"] .sidebar-search > span { overflow: visible; text-overflow: cl
 }
 
 .management-empty { padding:48px 16px; text-align:center; font-size:13px; color:var(--muted); }
+
+.empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:32px 16px; text-align:center; color:var(--muted); font-size:13px; }
+.empty-state-compact { gap:8px; padding:16px 8px; font-size:12px; }
+.empty-state > .ui-icon, :is(.archive-empty,.share-empty,.management-empty,.empty-workspace) > .ui-icon { opacity:.65; flex-shrink:0; }
+.management-empty { display:flex; flex-direction:column; align-items:center; gap:12px; }

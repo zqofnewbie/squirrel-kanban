@@ -478,13 +478,8 @@ export function todayISO(offset = 0) {
 
 // ---------- 空状态 ----------
 
-export function Empty({ text }: { text: string }) {
-  useLanguage()
-  return (
-    <div className="grid place-items-center rounded-lg border border-dashed border-black/[0.12] px-3 py-8 text-center text-[12px] opacity-50 dark:border-white/[0.14]">
-      {text}
-    </div>
-  )
+export function Empty({ text, compact = false }: { text: string; compact?: boolean }) {
+  return <div className={`empty-state ${compact ? 'empty-state-compact' : ''}`}><Icon name="empty" size={compact ? 24 : 32} /><p>{text}</p></div>
 }
 
 export function Toast({ msg }: { msg: string | null }) {

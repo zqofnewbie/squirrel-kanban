@@ -1,3 +1,4 @@
+import { Empty } from './ui'
 import { CardColumnSelect, CardCoverPicker, renderCardMarkdown } from './CardDetailControls'
 import { useLanguage } from './useLanguage'
 import { locale } from './i18n'
@@ -461,7 +462,7 @@ export default function CardDrawer() {
               }}
             />
             <p className="mb-2 text-[11px] text-[var(--muted)]">{t("单个文件最大 32 MB；支持图片、PDF、音视频、文本及已启用的 Office 文档预览。")}</p>
-            {!card.attachments?.length ? <p className="text-[12.5px] opacity-40">{t("还没有附件")}</p> : <AttachmentList attachments={card.attachments} onDelete={a => setDeletion({ kind: 'attachment', id: a.id, name: a.name })} />}
+            {!card.attachments?.length ? <Empty compact text={t("还没有附件")} /> : <AttachmentList attachments={card.attachments} onDelete={a => setDeletion({ kind: 'attachment', id: a.id, name: a.name })} />}
           </Section>
           </div>
 

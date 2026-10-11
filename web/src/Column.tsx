@@ -1,3 +1,4 @@
+import { Empty } from './ui'
 import ColumnScrollFooter from './ColumnScrollFooter'
 import { useLanguage } from './useLanguage'
 import { t } from './i18n'
@@ -304,7 +305,7 @@ export default function ColumnView({
           ))}
         </SortableContext>
         {col.cards.length === 0 && !composing && (
-          <div className="px-1 py-3 text-center text-[12px] opacity-40">{t("这里还没有卡片")}</div>
+          <Empty compact text={t("这里还没有卡片")} />
         )}
       </div>
 
