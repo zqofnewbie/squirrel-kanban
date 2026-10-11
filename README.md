@@ -29,8 +29,8 @@ React + Vite、Go、SQLite。生产环境通过 Docker Compose 部署，默认�
 需要 **Go 1.24+、Node.js 22+、npm**；建议使用仍受支持的 Go 版本。项目使用 `package-lock.json`，不混用包管理器。
 
 ```sh
-git clone https://gitee.com/storm07106038/kanban.git
-cd kanban
+git clone https://gitee.com/storm07106038/squirrel-kanban.git
+cd squirrel-kanban
 ./dev.sh
 ```
 

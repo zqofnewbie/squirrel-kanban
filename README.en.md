@@ -29,8 +29,8 @@ Screenshots use freshly initialized starter templates, with no personal boards o
 Requirements: **Go 1.24+, Node.js 22+ and npm**. Prefer a supported Go release. Use the committed `package-lock.json`; do not mix package managers.
 
 ```sh
-git clone https://gitee.com/storm07106038/kanban.git
-cd kanban
+git clone https://gitee.com/storm07106038/squirrel-kanban.git
+cd squirrel-kanban
 ./dev.sh
 ```
 
