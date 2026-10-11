@@ -22,7 +22,7 @@ import Icon from './Icon'
 import { api } from './api'
 import { useEventStream } from './sse'
 import { useStore } from './store'
-import { Avatar, Button, ConfirmDialog, Input, Menu, MenuItem, MenuSep, Modal, PromptDialog, Toast, cx } from './ui'
+import { Avatar, Button, ConfirmDialog, Input, PasswordInput, Menu, MenuItem, MenuSep, Modal, PromptDialog, Toast, cx } from './ui'
 
 export default function App() {
   const language = useLanguage()
@@ -348,10 +348,10 @@ export default function App() {
         title={me.must_change_password ? t("请先修改密码") : t("修改密码")}
       >
         <Field label={t("当前密码")}>
-          <Input type="password" value={pwd.old} onChange={(e) => setPwd({ ...pwd, old: e.target.value })} autoFocus />
+          <PasswordInput aria-label={t("当前密码")} autoComplete="current-password" value={pwd.old} onChange={(e) => setPwd({ ...pwd, old: e.target.value })} autoFocus />
         </Field>
         <Field label={t("新密码（至少 8 位）")}>
-          <Input type="password" value={pwd.next} onChange={(e) => setPwd({ ...pwd, next: e.target.value })} />
+          <PasswordInput aria-label={t("新密码（至少 8 位）")} autoComplete="new-password" value={pwd.next} onChange={(e) => setPwd({ ...pwd, next: e.target.value })} />
         </Field>
         <div className="mt-5 flex justify-end gap-2">
           {!me.must_change_password && <Button onClick={() => setPwdOpen(false)}>{t("取消")}</Button>}

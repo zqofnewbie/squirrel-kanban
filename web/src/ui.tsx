@@ -51,6 +51,17 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
   },
 )
 
+export const PasswordInput = React.forwardRef<HTMLInputElement, Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'>>(
+  function PasswordInput({ className, disabled, ...props }, ref) {
+    useLanguage()
+    const [visible, setVisible] = useState(false)
+    return <span className="password-field">
+      <Input {...props} ref={ref} disabled={disabled} type={visible ? 'text' : 'password'} className={cx('password-field-input', className)} />
+      <button type="button" className="password-visibility" disabled={disabled} aria-label={t(visible ? "隐藏密码" : "显示密码")} title={t(visible ? "隐藏密码" : "显示密码")} aria-pressed={visible} onMouseDown={e => e.preventDefault()} onClick={() => setVisible(value => !value)}><Icon name={visible ? 'eyeOff' : 'eye'} size={17} /></button>
+    </span>
+  },
+)
+
 export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   useLanguage()
   return (

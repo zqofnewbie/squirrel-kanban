@@ -5,7 +5,7 @@ import { t } from './i18n'
 import Brand from './Brand'
 import { useState } from 'react'
 import { useStore } from './store'
-import { Button, Input } from './ui'
+import { Button, Input, PasswordInput } from './ui'
 
 export default function Login() {
   useLanguage()
@@ -53,9 +53,8 @@ export default function Login() {
           />
 
           <label htmlFor="login-password" className="mb-1.5 block text-[12px] opacity-70">{t("密码")}</label>
-          <Input
+          <PasswordInput
             id="login-password"
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="current-password"

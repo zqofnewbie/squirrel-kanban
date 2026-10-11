@@ -826,3 +826,10 @@ html[lang="en-US"] .sidebar-search > span { overflow: visible; text-overflow: cl
 .management-empty { display:flex; flex-direction:column; align-items:center; gap:12px; }
 
 .space-card-meta { display:flex; flex-wrap:wrap; gap:6px 16px; margin:14px 0; color:var(--muted); font-size:11px; overflow-wrap:anywhere; }
+
+.password-field { display:block; position:relative; width:100%; min-width:0; }
+.password-field-input { padding-right:40px; }
+.password-visibility { position:absolute; right:4px; top:4px; display:grid; place-items:center; width:28px; height:28px; border-radius:6px; color:var(--muted); opacity:.7; }
+.password-visibility:hover, .password-visibility:focus-visible { opacity:1; background:color-mix(in srgb,var(--muted) 9%,transparent); }
+.password-visibility:focus-visible { outline:1px solid var(--muted); outline-offset:1px; }
+.password-visibility:disabled { cursor:not-allowed; opacity:.35; }

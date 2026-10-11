@@ -693,5 +693,7 @@
   "创建时间：{0}": "Created: {0}",
   "自主创建：{0}": "Owned: {0}",
   "系统": "System",
-  "未知": "Unknown"
+  "未知": "Unknown",
+  "显示密码": "Show password",
+  "隐藏密码": "Hide password"
 }
