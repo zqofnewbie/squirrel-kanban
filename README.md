@@ -74,6 +74,8 @@ docker compose up -d --build --wait
 
 `docker compose config -q` 校验配置和环境变量，不启动容器；成功时无输出。`docker compose up -d --build --wait` 先构建镜像、后台启动服务，再等待健康检查通过。请在项目根目录执行这些命令。
 
+主机端口通过 `.env` 中的 `KANBAN_PORT` 配置，未设置或留空时默认 `8080`。例如设置 `KANBAN_PORT=9090` 后，执行 `docker compose up -d --wait` 应用修改，通过 `http://服务器IP:9090` 访问，并放行对应端口。容器内部端口仍为 `8080`，无需修改健康检查。
+
 默认绑定 **0.0.0.0:8080**，通过 **http://服务器IP:8080** 访问（本机可用 http://127.0.0.1:8080）。服务器防火墙和云安全组需允许所需来源访问 TCP 8080。对外部署使用 HTTPS 反向代理，并设置 `KANBAN_COOKIE_SECURE=true`；本机 HTTP 访问保持 `false`。代理保留 Host，并覆盖客户端提供的转发头。
 
 运行镜像不包含 Node 或编译器，使用 UID/GID `10001`，根目录只读，移除 capabilities，仅数据卷和限额临时目录可写。`/healthz` 检查服务和数据库连接。首次生产初始化拒绝默认或过短密码；已有账号不会因环境变量变化被重置。

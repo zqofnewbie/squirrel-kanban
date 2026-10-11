@@ -74,6 +74,8 @@ docker compose up -d --build --wait
 
 `docker compose config -q` validates configuration and environment variables without starting containers; success produces no output. `docker compose up -d --build --wait` builds the image, starts the service in the background and waits for its health check to pass. Run these commands from the project root.
 
+Set `KANBAN_PORT` in `.env` to customize the host port; an unset or empty value defaults to `8080`. For example, set `KANBAN_PORT=9090`, apply it with `docker compose up -d --wait`, then open `http://SERVER_IP:9090` and allow that port through your firewall. The container still listens on `8080`, so its health check needs no changes.
+
 The host port binds to **0.0.0.0:8080**. Open **http://SERVER_IP:8080** (or http://127.0.0.1:8080 locally). Allow TCP 8080 from the intended sources in the server firewall and cloud security group. For public access, use an HTTPS reverse proxy and set `KANBAN_COOKIE_SECURE=true`. Keep it `false` for local HTTP. Preserve Host and overwrite client-supplied forwarding headers at the proxy.
 
 The runtime image contains neither Node nor compilers. It runs as UID/GID `10001`, with a read-only root filesystem, dropped capabilities, a writable data volume and bounded temporary storage. `/healthz` checks the service and database connection. Fresh production initialization rejects missing or short passwords; environment changes do not reset existing accounts.
