@@ -57,7 +57,7 @@ export default function ShareCenter({ revision, onConfigure, onCreate }: { revis
       e.preventDefault(); setStatus(statusOrder[target]); (e.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[target])?.focus()
     }} className={status === value ? 'selected' : ''} onClick={() => setStatus(value)}>{statusNames[value]}<span>{shares.filter(sh => value === 'all' || statusOf(sh, now) === value).length}</span></button>)}</div><div className="share-search"><Icon name="search" size={16} /><Input aria-label={t("搜索分享名称或看板")} value={search} onChange={e => setSearch(e.target.value)} placeholder={t("搜索名称或看板…")} /></div></div>
     {error && <p role="alert" className="error-banner">{error}<button onClick={() => void load()}>{t("重试")}</button></p>}
-    {loading && !shares.length ? <div role="status" className="share-empty">{t("正在读取分享记录…")}</div> : !filtered.length ? <div className="share-empty"><Icon name="link" size={32} /><h2>{shares.length ? t("没有匹配的分享记录") : t("还没有分享记录")}</h2><p>{shares.length ? t("试试其他状态，或清空搜索条件。") : t("点击右上角「新建分享」，选择看板并设置访问权限。")}</p>{(search || status !== 'all') && <Button onClick={() => { setSearch(''); setStatus('all') }}>{t("清除筛选")}</Button>}</div> : <div className="share-list" aria-label={t("已分享的链接")}>{filtered.map(sh => {
+    {loading && !shares.length ? <div role="status" className="share-empty">{t("正在读取分享记录…")}</div> : error && !shares.length ? null : !filtered.length ? <div className="share-empty"><h2>{shares.length ? t("没有匹配的分享记录") : t("还没有分享记录")}</h2>{(search || status !== 'all') && <Button onClick={() => { setSearch(''); setStatus('all') }}>{t("清除筛选")}</Button>}</div> : <div className="share-list" aria-label={t("已分享的链接")}>{filtered.map(sh => {
       const state = statusOf(sh, now)
       const permissions = Object.entries(sh.permissions).filter(([, allowed]) => allowed).map(([key]) => permissionNames[key as keyof typeof permissionNames])
       return <article className="share-row" key={sh.id}>
@@ -68,7 +68,7 @@ export default function ShareCenter({ revision, onConfigure, onCreate }: { revis
         </Menu></div>
       </article>
     })}</div>}
-    <p className="share-center-footnote">{t("链接停用、到期或删除后，访客的下一次请求会被拒绝。删除分享记录会撤销访问，保留看板内容。")}</p>
+    {!!shares.length && <p className="share-center-footnote">{t("链接停用、到期或删除后，访客的下一次请求会被拒绝。删除分享记录会撤销访问，保留看板内容。")}</p>}
     <ConfirmDialog open={!!action} danger title={action?.kind === 'remove' ? t("删除分享记录") : t("停用分享")} okText={action?.kind === 'remove' ? t("删除记录") : t("停用分享")} message={action?.kind === 'remove' ? t("删除「{0}」这条分享记录？旧链接与访客会话会失效，看板内容会保留。", [action.share.name]) : t("停用「{0}」的分享？访客将无法继续访问。之后可在设置里重新开启。", [action?.share.name])} onClose={() => setAction(null)} onOK={async () => {
       if (!action) return
       if (action.kind === 'remove') await shareApi.remove(action.share.id)

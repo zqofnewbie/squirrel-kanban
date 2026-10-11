@@ -789,8 +789,8 @@ html[lang="en-US"] .sidebar-search > span { overflow: visible; text-overflow: cl
 .archive-description summary { cursor:pointer; }
 .archive-description p { white-space:pre-wrap; overflow-wrap:anywhere; margin-top:8px; }
 .archive-footer { display:flex; align-items:center; justify-content:space-between; gap:16px; font-size:11px; color:var(--muted); }
-.archive-footer button { flex-shrink:0; }
-.archive-empty { display:flex; flex-direction:column; align-items:center; padding:30px 0; color:var(--muted); font-size:12px; text-align:center; }
+.archive-footer button { flex-shrink:0; margin-left:auto; }
+.archive-empty { display:flex; flex-direction:column; align-items:center; padding:48px 0; gap:12px; color:var(--muted); font-size:13px; text-align:center; }
 @media(max-width:520px) { .archive-item { flex-direction:column; } .archive-item-actions { align-self:flex-end; } }
 .column-cards, .shared-card-scroll.column-cards { scrollbar-gutter:auto; padding-left:2px; padding-right:max(0px, calc(12px - var(--column-scrollbar-width, 0px))); margin-left:-2px; margin-right:calc(-1 * max(12px, var(--column-scrollbar-width, 0px))); }
 .column-scroll-footer { flex-shrink:0; display:flex; align-items:stretch; gap:2px; margin-top:8px; border:1px solid color-mix(in srgb,var(--line) 72%,transparent); border-radius:9px; min-height:34px; }
@@ -817,3 +817,5 @@ html[lang="en-US"] .sidebar-search > span { overflow: visible; text-overflow: cl
  :is(.column-cards, .board-navigation).scroll-thin::-webkit-scrollbar-thumb { background:transparent; }
  :is(.column-cards, .board-navigation).scroll-thin:hover::-webkit-scrollbar-thumb { background:rgba(120,120,120,.3); }
 }
+
+.management-empty { padding:48px 16px; text-align:center; font-size:13px; color:var(--muted); }

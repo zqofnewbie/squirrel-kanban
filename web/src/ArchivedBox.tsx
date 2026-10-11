@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { api } from './api'
 import { useStore } from './store'
 import type { Card } from './types'
-import { Button, ConfirmDialog, Empty, Input, Modal, formatDate } from './ui'
+import { Button, ConfirmDialog, Input, Modal, formatDate } from './ui'
 
 export default function ArchivedBox() {
   useLanguage()
@@ -46,11 +46,11 @@ export default function ArchivedBox() {
   const query=search.trim().toLocaleLowerCase()
   const filtered=cards.filter(c=>!query||`${c.title} ${c.description} ${c.labels.map(l=>l.name).join(' ')}`.toLocaleLowerCase().includes(query))
   return <>
-    <Modal open={open} onClose={()=>{if(busy===null)setOpen(false)}} title={t('已归档的卡片')} width={660} footer={<div className="archive-footer"><span>{t('归档会保留内容，恢复后回到原列表。')}</span><Button size="sm" onClick={()=>setOpen(false)} disabled={busy!==null}>{t('关闭')}</Button></div>}>
-      <div className="archive-heading"><div><strong>{board?.name}</strong><p>{t('共 {0} 张归档卡片',[cards.length])}</p></div><Button size="sm" disabled={loading||busy!==null} onClick={()=>setRevision(v=>v+1)}><Icon name="refresh" size={14} className={loading?'animate-spin':''}/>{loading?t('正在加载…'):t('刷新')}</Button></div>
-      <Input className="mb-4" aria-label={t('搜索归档卡片')} placeholder={t('搜索标题、描述或标签')} value={search} onChange={e=>setSearch(e.target.value)}/>
+    <Modal open={open} onClose={()=>{if(busy===null)setOpen(false)}} title={t('已归档的卡片')} width={660} footer={<div className="archive-footer">{!!cards.length && <span>{t('归档会保留内容，恢复后回到原列表。')}</span>}<Button size="sm" onClick={()=>setOpen(false)} disabled={busy!==null}>{t('关闭')}</Button></div>}>
+      <div className="archive-heading"><div><strong>{board?.name}</strong>{!!cards.length && <p>{t('共 {0} 张归档卡片',[cards.length])}</p>}</div><Button size="sm" disabled={loading||busy!==null} onClick={()=>setRevision(v=>v+1)}><Icon name="refresh" size={14} className={loading?'animate-spin':''}/>{loading?t('正在加载…'):t('刷新')}</Button></div>
+      {!!cards.length && <Input className="mb-4" aria-label={t('搜索归档卡片')} placeholder={t('搜索标题、描述或标签')} value={search} onChange={e=>setSearch(e.target.value)}/>}
       {failure&&<p role="alert" className="error-banner">{failure}<button onClick={()=>setRevision(v=>v+1)} disabled={loading}>{t('重试')}</button></p>}
-      {loading ? <p role="status" className="py-10 text-center text-sm text-[var(--muted)]">{t('正在加载…')}</p> : !filtered.length ? <div className="archive-empty"><Icon name="archive" size={32}/><Empty text={query?t('没有匹配的卡片'):t('归档箱是空的')}/><p>{query?t('试试其他关键词'):t('暂时不用的任务可以归档，需要时再恢复。')}</p></div> : <ul className="archive-list">{filtered.map(c=><li key={c.id} className="archive-item">
+      {loading ? <p role="status" className="py-10 text-center text-sm text-[var(--muted)]">{t('正在加载…')}</p> : failure && !cards.length ? null : !filtered.length ? <div className="archive-empty"><p>{cards.length ? t('没有匹配的卡片') : t('归档箱是空的')}</p>{!!cards.length && <Button size="sm" onClick={()=>setSearch('')}>{t('清除筛选')}</Button>}</div> : <ul className="archive-list">{filtered.map(c=><li key={c.id} className="archive-item">
         <div className="archive-item-content"><h4>{c.title}</h4><p className="archive-meta">{board?.columns.find(col=>col.id===c.column_id)?.name || t('原列表')}<span> · {formatDate(c.updated_at)}</span>{c.due_date&&<span> · {t('截止 {0}',[formatDate(c.due_date)])}</span>}</p>
           {!!c.labels.length&&<div className="mt-2 flex flex-wrap gap-1">{c.labels.map(l=><span key={l.id} className="colored-label rounded px-2 py-0.5 text-[11px]" style={{background:l.color+'22','--label-color':l.color} as React.CSSProperties}>{l.name}</span>)}</div>}
           {c.description&&<details className="archive-description"><summary>{t('查看描述')}</summary><p>{c.description}</p></details>}

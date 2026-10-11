@@ -320,7 +320,12 @@ export default function App() {
             <BoardCanvas key={board.id} board={board}>{(scale, height) => <Board zoom={scale} height={height} />}</BoardCanvas>
           </div>
         ) : (
-          <div className="relative grid h-full place-items-center text-[13px]"><div className="empty-workspace"><Icon name="board" size={32} /><h2>{loading ? t("正在加载…") : error || (workspaceId ? t("从一块新看板开始") : me?.role === "member" ? t("等待分配工作空间") : t("创建你的第一个工作空间"))}</h2><p>{workspaceId ? t("把计划放进卡片，让事情慢慢有序。") : me?.role === "member" ? t("请联系管理员为你分配工作空间。") : t("创建自己的工作空间，或由超级管理员为你分配。")}</p>{!workspaceId && !loading && me?.role !== "member" && <Button variant="primary" onClick={() => useStore.getState().setPage('administration')}>{t("新建工作空间")}</Button>}{error ? <Button onClick={() => void useStore.getState().loadWorkspaces()}>{t("重试")}</Button> : workspaceId && !loading && <Button variant="primary" onClick={() => setNewBoardOpen(true)}>{t("新建看板")}</Button>}</div></div>
+          <div className="relative grid h-full place-items-center text-[13px]">
+            {loading ? <p role="status" className="text-[var(--muted)]">{t("正在加载…")}</p> : error ? <div className="empty-workspace"><h2 role="alert">{error}</h2><Button onClick={() => void useStore.getState().loadWorkspaces()}>{t("重试")}</Button></div> : <div className="empty-workspace">
+              <h2>{workspaceId ? t("从一块新看板开始") : me?.role === "member" ? t("请联系管理员为你分配工作空间。") : t("创建你的第一个工作空间")}</h2>
+              {workspaceId ? <Button variant="primary" onClick={() => setNewBoardOpen(true)}>{t("新建看板")}</Button> : me?.role !== "member" && <Button variant="primary" onClick={() => useStore.getState().setPage('administration')}>{t("新建工作空间")}</Button>}
+            </div>}
+          </div>
         )}
 
         {page === 'boards' && <CardDrawer />}

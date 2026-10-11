@@ -388,10 +388,10 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
         onClose={() => setColMenu(null)}
       />
 
-      {totalCards === 0 && columns.length <= 3 && (
+      {totalCards === 0 && columns.length === 0 && (
         <div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center px-8">
           <div className="w-[320px]">
-            <Empty text={board.columns.length ? t("这个看板还没有卡片，点列表下方的「添加卡片」开始") : t("先添加一个列表，再开始创建卡片")} />
+            <Empty text={t("先添加一个列表，再开始创建卡片")} />
           </div>
         </div>
       )}

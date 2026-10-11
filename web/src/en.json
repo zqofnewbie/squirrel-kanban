@@ -685,5 +685,7 @@
   "只有超级管理员可以调整成员归属": "Only the super administrator can change member ownership.",
   "仅成员可以设置管理归属": "Only members can be assigned a managing administrator.",
   "请选择有效的子管理员": "Select an active workspace administrator.",
-  "保存归属失败": "Could not save member ownership."
+  "保存归属失败": "Could not save member ownership.",
+  "暂无工作空间": "No workspaces yet",
+  "还没有成员": "No members yet"
 }
