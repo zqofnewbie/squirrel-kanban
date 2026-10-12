@@ -862,3 +862,20 @@ html[lang="en-US"] .sidebar-search > span { overflow: visible; text-overflow: cl
   .board-heading h1, .shared-toolbar h1 { font-size: 18px; margin-bottom: 2px; }
   .board-viewbar { margin-bottom: 0; }
 }
+
+/* Keep body portals inside native fullscreen; never remount or reparent the canvas. */
+html.canvas-fullscreen, .canvas-fullscreen body, .canvas-fullscreen #root { height: 100dvh; overflow: hidden; }
+.canvas-fullscreen .workspace-sidebar,
+.canvas-fullscreen .sidebar-backdrop,
+.canvas-fullscreen .sidebar-edge-toggle,
+.canvas-fullscreen .app-header,
+.canvas-fullscreen .board-toolbar,
+.canvas-fullscreen .board-viewbar,
+.canvas-fullscreen .shared-header,
+.canvas-fullscreen .shared-toolbar { display: none !important; }
+.canvas-fullscreen .workspace-main { width: 100%; min-width: 0; }
+@media (max-width: 380px) {
+  .canvas-tools input[type=range] { width: 36px; margin-inline: 1px; }
+  .canvas-tools { gap: 1px; padding: 4px; }
+  .canvas-tools button { padding-inline: 4px; }
+}

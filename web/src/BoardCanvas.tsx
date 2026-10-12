@@ -1,3 +1,5 @@
+import { createViewportAnchor } from './canvasViewport'
+import { useCanvasFullscreen } from './useCanvasFullscreen'
 import { useLanguage } from './useLanguage'
 import { t } from './i18n'
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
@@ -7,6 +9,9 @@ import type { BoardDetail } from './types'
 import { cx } from './ui'
 import { usePresence } from './usePresence'
 
+const hasCanvasOverlay = () => [...document.querySelectorAll('[role="dialog"], [role="menu"]')]
+  .some(element => !element.closest('[aria-hidden="true"], [inert]'))
+
 const PAD = 64
 const clamp = (value: number) => Math.max(25, Math.min(150, Math.round(value / 5) * 5))
 const read = (key: string, fallback: number) => { try { return Number(localStorage.getItem(key)) || fallback } catch { return fallback } }
@@ -14,6 +19,9 @@ const save = (key: string, value: string) => { try { localStorage.setItem(key, v
 
 export default function BoardCanvas({ board, children }: { board: BoardDetail; children: (scale: number, height: number) => ReactNode }) {
   useLanguage()
+  const fullscreen = useCanvasFullscreen()
+  const fullscreenRef = useRef(fullscreen)
+  fullscreenRef.current = fullscreen
   const key = `squirrel.zoom.${board.id}`
   const viewport = useRef<HTMLDivElement>(null)
   const world = useRef<HTMLDivElement>(null)
@@ -40,16 +48,19 @@ export default function BoardCanvas({ board, children }: { board: BoardDetail; c
   changeRef.current = change
   useLayoutEffect(() => {
     const element = viewport.current!
-    const resize = () => setHeight(element.clientHeight)
-    resize()
-    const initial = requestAnimationFrame(() => { element.scrollLeft = PAD * zoomRef.current / 100 - 16; element.scrollTop = PAD * zoomRef.current / 100 - 16 })
+    const anchor = createViewportAnchor(element)
+    const track = anchor.track
+    const resize = () => { anchor.resize(); setHeight(element.clientHeight) }
+    setHeight(element.clientHeight)
+    element.addEventListener('scroll', track, { passive: true })
+    const initial = requestAnimationFrame(() => { element.scrollLeft = PAD * zoomRef.current / 100 - 16; element.scrollTop = PAD * zoomRef.current / 100 - 16; track() })
     const observer = new ResizeObserver(resize); observer.observe(element)
-    return () => { observer.disconnect(); cancelAnimationFrame(initial) }
+    return () => { observer.disconnect(); element.removeEventListener('scroll', track); cancelAnimationFrame(initial) }
   }, [])
   useEffect(() => {
     const element = viewport.current!
     const wheel = (event: WheelEvent) => {
-      if (document.querySelector('[role="dialog"]:not([aria-hidden="true"]), [role="menu"]:not([aria-hidden="true"])')) return
+      if (hasCanvasOverlay()) return
       const target = event.target as HTMLElement
       if (target.closest('.canvas-tools, .canvas-minimap')) return
       // Unmodified wheel events are always scrolling, even when a diagonal
@@ -112,16 +123,23 @@ export default function BoardCanvas({ board, children }: { board: BoardDetail; c
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement
-      if (event.key === 'Escape') { setPan(false); setSpacePan(false); return }
-      if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || target.closest('input, textarea, select, [contenteditable="true"], [role="dialog"], [role="menu"]') || document.querySelector('[role="dialog"]:not([aria-hidden="true"]), [role="menu"]:not([aria-hidden="true"])')) return
-      // Leave Space and arrows to focused controls and keyboard card sorting.
-      if (target.closest('.card-tile') || ((event.code === 'Space' || event.key.startsWith('Arrow')) && target.closest('button, [role="button"], [role="slider"]'))) return
       const key = event.key.toLowerCase()
+      if (document.querySelector('.card-drag-preview, .column-drag-preview')) return
+      if (event.key === 'Escape') {
+        if (!event.defaultPrevented && !event.isComposing && !hasCanvasOverlay()) {
+          setPan(false); setSpacePan(false)
+          if (fullscreenRef.current.active && !target.closest('input, textarea, select, [contenteditable="true"]')) { event.preventDefault(); void fullscreenRef.current.exit() }
+        }
+        return
+      }
+      if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || target.closest('input, textarea, select, [contenteditable="true"], [role="dialog"], [role="menu"]') || hasCanvasOverlay()) return
+      // Leave Space and arrows to focused controls and keyboard card sorting.
+      if ((target.closest('.card-tile') && key !== 'f') || ((event.code === 'Space' || event.key.startsWith('Arrow')) && target.closest('button, [role="button"], [role="slider"]'))) return
       if (event.code === 'Space') { event.preventDefault(); setSpacePan(true); return }
       if (event.repeat && ['h', 'm', 'f', '0'].includes(key)) return
       if (key === 'h') setPan(value => !value)
       else if (key === 'm') setMinimap(value => { save('squirrel.minimap', value ? '0' : '1'); return !value })
-      else if (key === 'f') actions.current.fit()
+      else if (key === 'f') { if (event.shiftKey) actions.current.fit(); else { setPan(false); setSpacePan(false); void fullscreenRef.current.toggle() } }
       else if (key === '0') actions.current.reset()
       else if (key === '+' || key === '=') changeRef.current(zoomRef.current + 10)
       else if (key === '-') changeRef.current(zoomRef.current - 10)
@@ -181,9 +199,10 @@ export default function BoardCanvas({ board, children }: { board: BoardDetail; c
         <ToolHint text={t("放大 · +")}><button aria-label={t("放大看板")} disabled={zoom >= 150} onClick={() => change(zoom + 10)}><Icon name="plus" size={14} /></button></ToolHint>
         <span className="canvas-percent" aria-live="polite">{zoom}%</span>
         <ToolHint text={t("恢复 100% 并回到起点 · 0")} align="end"><button aria-label={t("重置画布")} onClick={reset}><Icon name="refresh" size={15} /></button></ToolHint>
-        <ToolHint text={t("完整展示所有列表 · F")} align="end"><button aria-label={t("适应画布宽度")} onClick={fit}>{t("适应")}</button></ToolHint>
+        <ToolHint text={t("完整展示所有列表 · Shift + F")} align="end"><button aria-label={t("适应画布宽度")} onClick={fit}>{t("适应")}</button></ToolHint>
         <span className="canvas-tool-separator" />
         <ToolHint text={minimap ? t("收起缩略图 · M") : t("展开缩略图 · M")} align="end"><button ref={minimapToggle} aria-label={minimap ? t("关闭缩略图") : t("打开缩略图")} aria-pressed={minimap} aria-expanded={minimap} className={cx(minimap && 'selected')} onClick={() => { setMinimap(value => !value); save('squirrel.minimap', minimap ? '0' : '1') }}><Icon name="minimap" size={17} /></button></ToolHint>
+        <ToolHint text={fullscreen.active ? t("退出全屏 · F / Esc") : t("全屏画布 · F")} align="end"><button type="button" aria-label={fullscreen.active ? t("退出全屏") : t("全屏画布")} aria-pressed={fullscreen.active} aria-keyshortcuts="F" className={cx(fullscreen.active && 'selected')} onClick={() => { setPan(false); setSpacePan(false); void fullscreen.toggle() }}><Icon name={fullscreen.active ? 'fullscreenExit' : 'fullscreen'} size={17} /></button></ToolHint>
       </div>
     </div>
   </div>

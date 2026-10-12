@@ -15,7 +15,7 @@ Built with React + Vite, Go and SQLite. Production runs through Docker Compose w
 - Comments, attachment previews, downloads, archiving and restoration. Browser previews support images, PDFs, audio, video and text. Office conversion is optional.
 - Independent share management with fixed short links, live content, expiration, revocation and individual collaboration switches. Guests visit one board without signing in.
 - Chinese / English UI and light / dark themes. Initial preferences follow the browser; explicit choices are remembered.
-- Board backgrounds, canvas pan and zoom, minimap, resizable / collapsible sidebar and keyboard shortcuts.
+- Board backgrounds, canvas pan, zoom and fullscreen, minimap, resizable / collapsible sidebar and keyboard shortcuts.
 - Virtual rendering for large card lists, SSE updates for signed-in accounts, and foreground share checks every 15 seconds. Unchanged boards are not retransmitted.
 
 ![Template card details — description and checklist](docs/screenshots/card-detail-en.jpg)
@@ -145,7 +145,8 @@ A sharing URL is an access credential: never publish a live private link. Permis
 | Two-finger scroll / `Shift + wheel` | Pan / horizontal pan |
 | `Space + drag` / middle mouse | Temporary pan |
 | `H` / `M` | Pan mode / minimap |
-| `+` / `-` / `0` / `F` | Zoom in / out / reset / fit width |
+| `+` / `-` / `0` / `Shift + F` | Zoom in / out / reset / fit width |
+| `F` | Toggle canvas fullscreen (admin and shared boards); `Esc` exits |
 
 Single-key shortcuts do not trigger while typing or composing text with an IME.
 

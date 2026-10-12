@@ -695,5 +695,12 @@
   "系统": "System",
   "未知": "Unknown",
   "显示密码": "Show password",
-  "隐藏密码": "Hide password"
+  "隐藏密码": "Hide password",
+  "完整展示所有列表 · Shift + F": "Fit all lists · Shift + F",
+  "退出全屏 · F / Esc": "Exit fullscreen · F / Esc",
+  "全屏画布 · F": "Fullscreen canvas · F",
+  "退出全屏": "Exit fullscreen",
+  "全屏画布": "Fullscreen canvas",
+  "切换画布全屏，Esc 退出": "Toggle canvas fullscreen; Esc to exit",
+  "在悬停列表快速添加卡片，默认第一列": "Add a card to the hovered list, or the first list by default"
 }
