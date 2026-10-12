@@ -1,7 +1,7 @@
 import { useLanguage } from './useLanguage'
 import { t } from './i18n'
 import SquirrelLogo from './SquirrelLogo'
-export default function Brand({ compact = false, animated = false }: { compact?: boolean; animated?: boolean }) {
+export default function Brand({ compact = false, animated = true }: { compact?: boolean; animated?: boolean }) {
   useLanguage()
   return (
     <div className="brand">
