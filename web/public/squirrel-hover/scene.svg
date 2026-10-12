@@ -1,0 +1,80 @@
+<svg id="stage" viewBox="0 0 760 420" aria-hidden="true" focusable="false">
+        <defs>
+          <image id="source" href="/squirrel-hover/squirrel.png" width="256" height="256"/>
+          <image id="chestRepair" href="/squirrel-hover/chest-repair-v1.png" width="256" height="256"/>
+          <path id="leftShape" d="M138 153 C147 152 154 153 160 155 C168 152 175 155 177 159 C180 162 179 166 174 168 C176 173 170 179 162 181 C149 185 136 181 132 174 C129 166 131 159 138 153Z"/>
+          <path id="rightShape" d="M216 153 C222 152 228 155 231 160 C234 166 232 172 228 176 C221 179 215 175 211 171 C207 168 209 162 212 159Z"/>
+          <path id="nutShape" d="M167 148 C165 136 178 129 191 132 L202 125 Q210 121 215 130 L210 137 C217 140 222 147 218 156 L211 177 Q201 191 187 189 Q171 185 169 174Z"/>
+          <path id="tailShape" d="M0 35 H85 Q95 50 95 65 L95 85 L92 116 L89 137 Q95 147 96 153 L93 175 Q93 205 104 218 L102 230 L101 238 H0Z"/>
+          <mask id="repairRegion" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256"><rect width="256" height="256" fill="black"/><use href="#occlusionShape" fill="white" stroke="white" stroke-width="4"/></mask>
+          <g id="bodySurface">
+            <use href="#chestRepair" mask="url(#repairRegion)"/>
+            <use href="#source" mask="url(#bodyMask)"/>
+          </g>
+          <linearGradient id="tailRootKeep" gradientUnits="userSpaceOnUse" x1="0" y1="152" x2="0" y2="184"><stop stop-color="black"/><stop offset="1" stop-color="white"/></linearGradient>
+          <linearGradient id="tailDistalOpacity" gradientUnits="userSpaceOnUse" x1="0" y1="184" x2="0" y2="217"><stop stop-color="white"/><stop offset="1" stop-color="black"/></linearGradient>
+          <mask id="tailFade" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256"><rect width="256" height="256" fill="url(#tailDistalOpacity)"/></mask>
+          <path id="frontLegShape" d="M192 225 Q205 223 216 228 Q221 232 220 237 Q211 242 199 239 Q186 237 184 232 Q184 228 192 225Z"/>
+          <clipPath id="tailClip"><use href="#tailShape"/></clipPath>
+          <path id="backFootShape" d="M116 222 Q135 220 154 228 Q159 235 156 241 Q151 247 130 245 Q117 242 116 235Z"/>
+          <path id="backToeCut" d="M115 234 Q135 233 155 234 L160 248 H113Z"/>
+          <path id="frontToeCut" d="M183 233 Q202 232 222 234 L224 243 H181Z"/>
+          <linearGradient id="backAnkleBlend" gradientUnits="userSpaceOnUse" x1="0" y1="222" x2="0" y2="232"><stop stop-color="black"/><stop offset="1" stop-color="white"/></linearGradient>
+          <linearGradient id="frontAnkleBlend" gradientUnits="userSpaceOnUse" x1="0" y1="225" x2="0" y2="232"><stop stop-color="black"/><stop offset="1" stop-color="white"/></linearGradient>
+          <mask id="backAnkleFade" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256"><rect width="256" height="256" fill="url(#backAnkleBlend)"/></mask>
+          <mask id="frontAnkleFade" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256"><rect width="256" height="256" fill="url(#frontAnkleBlend)"/></mask>
+          <filter id="footEdges" filterUnits="userSpaceOnUse" x="110" y="220" width="132" height="34" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 -1 0 .58"/><feComponentTransfer><feFuncA type="linear" slope="30" intercept="0"/></feComponentTransfer><feComposite in2="SourceGraphic" operator="in"/></filter>
+          <filter id="pawEdges" filterUnits="userSpaceOnUse" x="125" y="146" width="116" height="42" color-interpolation-filters="sRGB">
+            <!-- Remove cream torso pixels captured along the moving paw edge. -->
+            <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 -1 0 .65"/>
+            <feComponentTransfer><feFuncA type="linear" slope="20" intercept="0"/></feComponentTransfer>
+            <feComposite in2="SourceGraphic" operator="in"/>
+          </filter>
+          <clipPath id="leftShoulderClip"><circle cx="140" cy="163" r="8"/></clipPath>
+          <clipPath id="rightShoulderClip"><circle cx="225" cy="161" r="6"/></clipPath><clipPath id="backFootClip"><use href="#backFootShape"/></clipPath>
+          <clipPath id="frontLegClip"><use href="#frontLegShape"/></clipPath>
+          <mask id="torsoMask" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256"><rect width="256" height="256" fill="white"/><use href="#tailShape" fill="black"/><use href="#tailShape" fill="url(#tailRootKeep)"/><use href="#backToeCut" fill="black"/><use href="#frontToeCut" fill="black"/></mask>
+          <clipPath id="leftClip"><use href="#leftShape"/></clipPath>
+          <clipPath id="rightClip"><use href="#rightShape"/></clipPath>
+          <clipPath id="nutClip"><use href="#nutShape"/></clipPath>
+          <filter id="nutEdges" filterUnits="userSpaceOnUse" x="162" y="122" width="60" height="73" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 -1 0 .65"/><feComponentTransfer><feFuncA type="linear" slope="20" intercept="0"/></feComponentTransfer><feComposite in2="SourceGraphic" operator="in"/></filter>
+          <path id="occlusionShape" d="M134 151 Q154 148 162 151 L165 141 C173 127 187 128 198 130 L202 124 Q216 120 217 135 Q226 141 222 150 L232 152 Q243 166 232 183 L215 181 Q210 195 190 193 L162 187 Q137 190 129 176 Q125 162 134 151Z"/>
+          <mask id="bodyMask" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256">
+            <rect width="256" height="256" fill="white"/>
+            <use href="#occlusionShape" fill="black"/>
+          </mask>
+          <mask id="nutMask" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256">
+            <rect width="256" height="256" fill="white"/>
+            <path d="M139 151 C148 150 153 151 160 153 C168 150 176 154 179 158 C183 162 181 168 176 170 C178 175 171 181 163 183 C151 187 135 183 131 175 C127 167 128 158 139 151Z" fill="black" stroke="black" stroke-width="2"/>
+            <path d="M216 151 C222 150 230 153 233 159 C237 166 234 173 230 178 C222 181 214 177 209 173 C204 169 207 161 211 157Z" fill="black" stroke="black" stroke-width="2"/>
+          </mask>
+          <radialGradient id="shade"><stop stop-color="#6d5038" stop-opacity=".23"/><stop offset="1" stop-color="#6d5038" stop-opacity="0"/></radialGradient>
+          <linearGradient id="belly" x1="0" y1="0" x2=".5" y2="1"><stop stop-color="#fff7d5"/><stop offset="1" stop-color="#ffe5a6"/></linearGradient>
+          <linearGradient id="shell"><stop stop-color="#e8ae55"/><stop offset="1" stop-color="#bc7432"/></linearGradient>
+          <g id="acornArtwork">
+            <!-- Original interior texture; a continuous silhouette covers hidden edges. -->
+            <use href="#nutShape" fill="#8b481c" stroke="#743713" stroke-width="2"/>
+            <path d="M171 149 Q168 179 189 188 Q207 189 215 151Z" fill="url(#shell)" stroke="#743713" stroke-width="2"/>
+            <path d="M183 153 Q178 174 190 185 M195 153 Q194 177 197 182 M204 154 Q205 173 201 181" fill="none" stroke="#ad6b2c" stroke-width="1.6"/>
+            <use href="#source" clip-path="url(#nutClip)" mask="url(#nutMask)" filter="url(#nutEdges)"/>
+          </g>
+        </defs>
+        <path class="ground" d="M60 342 H700"/>
+        <ellipse id="squirrelShadow" cx="277" cy="344" rx="116" ry="13" fill="url(#shade)"/>
+        <ellipse id="nutShadow" cx="330" cy="343" rx="25" ry="6" fill="url(#shade)" opacity="0"/>
+        <g id="squirrel">
+          <g id="rig">
+            <g id="tail" mask="url(#tailFade)"><path d="M88 50 C111 55 117 99 106 132 C93 160 98 198 114 220 L103 229 Q90 190 83 147Z" fill="#ffa832" stroke="#965019" stroke-width="2.5" stroke-linejoin="round"/><use href="#source" clip-path="url(#tailClip)"/></g>
+            <g id="frontLeg"><use href="#source" clip-path="url(#frontLegClip)" mask="url(#frontAnkleFade)" filter="url(#footEdges)"/></g>
+            <g id="torso">
+              <g id="bodyArt"><g mask="url(#torsoMask)"><use href="#bodySurface"/></g></g>
+              <g id="shoulderAnchors"><use href="#source" clip-path="url(#leftShoulderClip)" filter="url(#pawEdges)"/><use href="#source" clip-path="url(#rightShoulderClip)" filter="url(#pawEdges)"/></g>
+              <g id="looseNut" visibility="hidden"><use href="#acornArtwork" transform="translate(-192 -160)"/></g>
+              <g id="heldNut"><use href="#acornArtwork"/></g>
+              <g id="leftHand"><use href="#source" clip-path="url(#leftClip)" filter="url(#pawEdges)"/></g>
+              <g id="rightHand"><use href="#source" clip-path="url(#rightClip)" filter="url(#pawEdges)"/></g>
+            </g>
+            <g id="backLeg"><g id="backFoot"><use href="#source" clip-path="url(#backFootClip)" mask="url(#backAnkleFade)" filter="url(#footEdges)"/></g></g>
+          </g>
+        </g>
+      </svg>

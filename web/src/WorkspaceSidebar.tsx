@@ -50,7 +50,7 @@ export default function WorkspaceSidebar({ onToggle, collapsed, open, onClose, o
     <>
       {presence.mounted && <button data-motion={presence.phase} className="sidebar-backdrop fade-in" aria-label={t("关闭导航")} onClick={onClose} />}
       <aside style={{ '--sidebar-width': `${width}px` } as React.CSSProperties} className={cx('workspace-sidebar', open && 'is-open', collapsed && 'is-collapsed')}>
-        <Brand />
+        <Brand animated />
         <button className="sidebar-search" onClick={() => setPalette(true)}>
           <Icon name="search" size={16} /><span>{t("搜索看板与卡片")}</span><kbd>{shortcut('K')}</kbd>
         </button>
