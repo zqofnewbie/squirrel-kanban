@@ -90,9 +90,11 @@ export default function App() {
         e.preventDefault()
         searchRef.current?.focus()
       }
-      if (e.key === 'n' && board && page === 'boards') {
+      if (e.key.toLowerCase() === 'n' && !e.repeat && board && page === 'boards') {
         e.preventDefault()
-        const col = board.columns[0]
+        const hoveredColumn = document.querySelector<HTMLElement>('.board-content .board-canvas [data-column-id]:hover')
+        const hoveredId = Number(hoveredColumn?.dataset.columnId)
+        const col = board.columns.find(column => column.id === hoveredId) ?? board.columns[0]
         if (col) window.dispatchEvent(new CustomEvent('kanban:compose', { detail: col.id }))
       }
     }
