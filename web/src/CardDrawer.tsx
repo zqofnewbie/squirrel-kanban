@@ -48,6 +48,7 @@ export default function CardDrawer() {
   const [clAdding, setClAdding] = useState(false)
   const [clTitle, setClTitle] = useState('')
   const [editingChecklist, setEditingChecklist] = useState<{ id: number; title: string } | null>(null)
+  const [editingItem, setEditingItem] = useState<{ id: number; text: string; original: string } | null>(null)
   const panelRef = useRef<HTMLElement>(null)
   useDialogFocus(panelRef, !!openId, () => requestClose())
   const fileRef = useRef<HTMLInputElement | null>(null)
@@ -85,6 +86,7 @@ export default function CardDrawer() {
     setClAdding(false)
     setClTitle('')
     setEditingChecklist(null)
+    setEditingItem(null)
     let alive = true
     api
       .getCard(openId)
@@ -121,7 +123,7 @@ export default function CardDrawer() {
 
   function requestClose() {
     if (busy || mutation.current) return
-    if (card && ((editingDesc && desc !== card.description) || titleDraft.trim() !== card.title || dueDraft !== (card.due_date?.slice(0,10) ?? '') || (clAdding && !!clTitle.trim()) || !!editingChecklist || Object.values(newItem).some(text => !!text.trim()))) { setDiscardOpen(true); return }
+    if (card && ((editingDesc && desc !== card.description) || titleDraft.trim() !== card.title || dueDraft !== (card.due_date?.slice(0,10) ?? '') || (clAdding && !!clTitle.trim()) || !!editingChecklist || (!!editingItem && editingItem.text.trim() !== editingItem.original) || Object.values(newItem).some(text => !!text.trim()))) { setDiscardOpen(true); return }
     setOpenCard(null)
   }
   if (!presence.mounted || !board) return null
@@ -396,7 +398,25 @@ export default function CardDrawer() {
                     {t("删除")} </button>}
                 </div>
                 <div className="space-y-0.5">
-                  {cl.items.map((it) => (
+                  {cl.items.map((it) => editingItem?.id === it.id ? (
+                    <form key={it.id} className="checklist-item-editor" onSubmit={async e => {
+                      e.preventDefault()
+                      const text = editingItem.text.trim()
+                      if (!text || busy) return
+                      if (text === editingItem.original || await mutate(() => api.updateItem(it.id, { text }))) setEditingItem(null)
+                    }}>
+                      <Input autoFocus data-escape-local aria-label={t("编辑清单项")} maxLength={2000} value={editingItem.text} disabled={busy}
+                        onChange={e => setEditingItem({ ...editingItem, text: e.target.value })}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && e.nativeEvent.isComposing) e.preventDefault()
+                          if (e.key === 'Escape' && !e.nativeEvent.isComposing) { e.preventDefault(); e.stopPropagation(); if (!busy) setEditingItem(null) }
+                        }} />
+                      <div className="flex shrink-0 gap-2">
+                        <Button size="sm" type="submit" variant="primary" disabled={busy || !editingItem.text.trim()}>{t("保存")}</Button>
+                        <Button size="sm" disabled={busy} onClick={() => setEditingItem(null)}>{t("取消")}</Button>
+                      </div>
+                    </form>
+                  ) : (
                     <div key={it.id} className="group flex items-start gap-2 rounded-md px-1 py-0.5 hover:bg-black/[0.03] dark:hover:bg-white/[0.05]">
                       <input
                         type="checkbox"
@@ -413,10 +433,13 @@ export default function CardDrawer() {
                       >
                         {it.text}
                       </span>
+                      <button type="button" disabled={busy || !!editingItem} aria-label={t("编辑清单项：{0}", [it.text])} title={t("编辑")}
+                        onClick={() => setEditingItem({ id: it.id, text: it.text, original: it.text })}
+                        className="checklist-item-action"><Icon name="edit" size={15} /></button>
                       <button
                         aria-label={t("删除清单项：{0}", [it.text])}
                         onClick={() => setDeletion({ kind: 'item', id: it.id, name: it.text })}
-                        className="text-[12px] opacity-0 transition-opacity group-hover:opacity-45 hover:!opacity-100"
+                        className="checklist-item-action"
                       >
                         <Icon name="close" size={18} />
                       </button>

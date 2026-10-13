@@ -887,3 +887,11 @@ html.canvas-fullscreen, .canvas-fullscreen body, .canvas-fullscreen #root { heig
   .canvas-tools { gap: 1px; padding: 4px; }
   .canvas-tools button { padding-inline: 4px; }
 }
+
+.checklist-item-action { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 24px; height: 24px; color: var(--muted); opacity: 0; transition: opacity .15s; }
+.group:hover > .checklist-item-action, .group:focus-within > .checklist-item-action { opacity: .65; }
+.checklist-item-action:hover, .checklist-item-action:focus-visible { opacity: 1 !important; color: var(--accent); }
+.checklist-item-editor { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 4px; }
+.checklist-item-editor > input { flex: 1 1 180px; min-width: 0; }
+.checklist-item-editor button { white-space: nowrap; }
+@media (hover: none) { .checklist-item-action { opacity: .65; } }

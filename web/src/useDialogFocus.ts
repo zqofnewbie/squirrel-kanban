@@ -13,6 +13,7 @@ export function useDialogFocus(ref: RefObject<HTMLElement>, open: boolean, onClo
       const dialogs = document.querySelectorAll('[role="dialog"]:not([aria-hidden="true"]):not(.motion-layer[data-motion="exit"] [role="dialog"])')
       if (dialogs[dialogs.length - 1] !== panel) return
       if (document.querySelector('[role="menu"]:not([aria-hidden="true"])')) return
+      if (event.key === 'Escape' && (event.target as HTMLElement)?.closest('[data-escape-local]')) return
       if (event.key === 'Escape' && !event.isComposing) { event.preventDefault(); event.stopPropagation(); close.current() }
       if (event.key === 'Tab') {
         const items = controls()
