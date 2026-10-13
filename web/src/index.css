@@ -900,3 +900,10 @@ html.canvas-fullscreen, .canvas-fullscreen body, .canvas-fullscreen #root { heig
 [data-pointer-focus-restored]:focus-visible { outline: none; }
 
 [data-keyboard-focus-restored]:focus { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* DnD restores focus independently of dialogs. Pointer-driven cards must never
+   inherit a keyboard ring during pickup, the drag overlay, or drop animation. */
+:root[data-focus-modality="pointer"] .card-tile:focus { outline: none; }
+.card-tile.is-dragging:focus,
+.card-drag-preview .card-tile:focus,
+.column-drag-preview .card-tile:focus { outline: none !important; }
