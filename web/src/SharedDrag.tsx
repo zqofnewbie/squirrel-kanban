@@ -1,5 +1,5 @@
 import { createPortal } from 'react-dom'
-import { useContext, useRef, useState, type ReactNode } from 'react'
+import { useContext, useMemo, useRef, useState, type ReactNode } from 'react'
 import { DndContext, DragOverlay, PointerSensor, KeyboardSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { BoardScale } from './BoardZoom'
@@ -38,6 +38,8 @@ export function SharedDrag({ board, enabled, move, preview, onDragging, children
  }}>{children}{createPortal(<DragOverlay adjustScale={false} dropAnimation={cardDropAnimation}>{active&&<div className="card-drag-preview rounded-[10px]" style={{zoom:scale,width}}><CardTile overlay card={active} dimmed={false} onOpen={()=>{}} onRename={async()=>{}}/></div>}</DragOverlay>,document.body)}</DndContext>
 }
 export function SharedDropColumn({id,cards,children,enabled}:{id:number;cards:Card[];children:ReactNode;enabled:boolean}) {
+ // Preserve sorting transitions across useDroppable pointer updates.
+ const cardIds=useMemo(()=>cards.map(card=>card.id),[cards])
  const {setNodeRef}=useDroppable({id:`col:${id}`,data:{type:'column'},disabled:!enabled})
- return <section ref={setNodeRef} className="kanban-column" data-column-id={id}><SortableContext items={cards.map(c=>c.id)} strategy={verticalListSortingStrategy}>{children}</SortableContext></section>
+ return <section ref={setNodeRef} className="kanban-column" data-column-id={id}><SortableContext items={cardIds} strategy={verticalListSortingStrategy}>{children}</SortableContext></section>
 }

@@ -4,7 +4,7 @@ import SortableBoardRow from './SortableBoardRow'
 import { shortcut } from './shortcuts'
 import { useLanguage } from './useLanguage'
 import { t, preference, savePreference } from './i18n'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { api } from './api'
 import type { Board } from './types'
 import { usePresence } from './usePresence'
@@ -41,6 +41,7 @@ export default function WorkspaceSidebar({ onToggle, collapsed, open, onClose, o
   const setPage = useStore(s => s.setPage)
   const board = useStore(s => s.board)
   const boards = useStore(s => s.boards)
+  const boardIds = useMemo(() => boards.map(board => board.id), [boards])
   const openBoard = useStore(s => s.openBoard)
   const setPalette = useStore(s => s.setPalette)
   const setArchiveOpen = useStore(s => s.setArchiveOpen)
@@ -65,7 +66,7 @@ export default function WorkspaceSidebar({ onToggle, collapsed, open, onClose, o
           const ordered = arrayMove(boards, from, to), previous = boards, space = workspaceId
           useStore.setState({ boards: ordered }); setSorting(true); setSortError('')
           try { await api.reorderBoards(space, ordered.map(b => b.id)) } catch { if (useStore.getState().workspaceId === space) useStore.setState({ boards: previous }); setSortError(t("排序保存失败，请重试")) } finally { setSorting(false) }
-        }}><SortableContext items={boards.map(b => b.id)} strategy={verticalListSortingStrategy}><nav className={cx("board-navigation scroll-thin", draggingBoard && "is-dragging-boards")} aria-label={t("看板导航")}>
+        }}><SortableContext items={boardIds} strategy={verticalListSortingStrategy}><nav className={cx("board-navigation scroll-thin", draggingBoard && "is-dragging-boards")} aria-label={t("看板导航")}>
           {boards.map(item => <SortableBoardRow key={item.id} id={item.id} name={item.name} selected={page === 'boards' && item.id === board?.id} disabled={sorting}>
             <button aria-current={page === 'boards' && item.id === board?.id ? 'page' : undefined} className="board-nav-item" title={item.name} onClick={() => { onClose(); void openBoard(item.id) }}>
               <BoardBadge seed={item.id} /><span>{item.name}</span>{!!item.share_count && <span className="board-shared-marker" title={t("已分享")} aria-label={t("已分享")}><Icon name="share" size={12}/></span>}<small>{item.id === board?.id ? count : item.card_count}</small>

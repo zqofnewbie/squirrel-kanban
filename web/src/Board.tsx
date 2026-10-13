@@ -71,6 +71,7 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
   }, [board, keyword])
 
   const columns = board.columns
+  const columnIds = useMemo(() => columns.map(col => `col:${col.id}`), [columns])
 
   const cardColumns = useMemo(() => new Map(columns.flatMap(col => col.cards.map(card => [card.id, col.id] as const))), [columns])
 
@@ -283,7 +284,7 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
         style={{ alignItems: 'stretch', height: height ?? '100%' }}
       >
         <SortableContext
-          items={columns.map((c) => `col:${c.id}`)}
+          items={columnIds}
           strategy={horizontalListSortingStrategy}
         >
           {columns.map((col) => (

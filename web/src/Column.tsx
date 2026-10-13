@@ -5,7 +5,7 @@ import { t } from './i18n'
 import { useContext } from 'react'
 import { BoardScale } from './BoardZoom'
 import Icon from './Icon'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import CardTile from './CardTile'
@@ -46,6 +46,9 @@ export default function ColumnView({
   onDeleteColumn,
 }: Props) {
   useLanguage()
+  // dnd-kit disables transitions when the items reference changes. Keep it
+  // stable during pointer updates so neighbouring cards animate into place.
+  const cardIds = useMemo(() => col.cards.map(card => card.id), [col.cards])
   const scale = useContext(BoardScale)
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `col:${col.id}`,
@@ -291,7 +294,7 @@ export default function ColumnView({
         className="column-cards scroll-thin min-h-[24px] shrink overflow-y-auto rounded-xl bg-black/[0.035] p-2 dark:bg-white/[0.045]"
       >
         <SortableContext
-          items={col.cards.map((c) => c.id)}
+          items={cardIds}
           strategy={verticalListSortingStrategy}
         >
           {col.cards.length >= 80 ? <VirtualCards cards={col.cards} scrollRef={areaRef} onOpen={onOpenCard} onRename={onRenameCard} /> : col.cards.map((c) => (
