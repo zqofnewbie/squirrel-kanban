@@ -895,3 +895,8 @@ html.canvas-fullscreen, .canvas-fullscreen body, .canvas-fullscreen #root { heig
 .checklist-item-editor > input { flex: 1 1 180px; min-width: 0; }
 .checklist-item-editor button { white-space: nowrap; }
 @media (hover: none) { .checklist-item-action { opacity: .65; } }
+
+/* Restoring pointer focus after dialog text input must not mimic keyboard navigation. */
+[data-pointer-focus-restored]:focus-visible { outline: none; }
+
+[data-keyboard-focus-restored]:focus { outline: 2px solid var(--accent); outline-offset: 3px; }
