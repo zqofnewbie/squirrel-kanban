@@ -215,7 +215,7 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
 }
 
 function SortableCard(props: Props) {
-  const sortable = useSortable({ id: props.card.id, data: { type: 'card', columnId: props.card.column_id }, disabled: props.canMove === false, transition: cardTransition })
+  const sortable = useSortable({ id: props.card.id, data: { type: 'card', columnId: props.card.column_id, pinned: !!props.card.pinned }, disabled: props.canMove === false, transition: cardTransition })
   return <CardTileBase {...props} sortable={sortable} />
 }
 function CardTile(props: Props) {

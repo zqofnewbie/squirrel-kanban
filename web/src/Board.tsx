@@ -1,5 +1,5 @@
 import BoardDragScroll from './BoardDragScroll'
-import { boardCollision, cardDropAnimation } from './boardDrag'
+import { boardCollision, cardDropAnimation, restoreBoardCard, cardBeforeId } from './boardDrag'
 import ColumnDragPreview, { captureColumn } from './ColumnDragPreview'
 import { useLanguage } from './useLanguage'
 import { t } from './i18n'
@@ -27,7 +27,7 @@ import ColumnView from './Column'
 import CardTile from './CardTile'
 import { api } from './api'
 import { useStore } from './store'
-import type { Card } from './types'
+import type { BoardDetail, Card } from './types'
 import { Button, ConfirmDialog, Empty, cx } from './ui'
 
 type DragData = { type: 'card' | 'column'; columnId?: number }
@@ -49,7 +49,7 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
   const [savingColumn, setSavingColumn] = useState(false)
   const [colDraft, setColDraft] = useState('')
   const [dragWidth, setDragWidth] = useState(266)
-  const originColumn = useRef<number | null>(null)
+  const originBoard = useRef<BoardDetail | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -87,6 +87,7 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
   const collisionDetection = boardCollision
 
   function onDragStart(e: DragStartEvent) {
+    originBoard.current = board
     const rect = e.active.rect.current.initial
     if (rect) setDragWidth(rect.width / zoom)
     const data = e.active.data.current as DragData | undefined
@@ -102,7 +103,6 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
       const c = col.cards.find((x) => x.id === id)
       if (c) {
         setActiveCard(c)
-        originColumn.current = col.id
         return
       }
     }
@@ -133,6 +133,17 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
     moveCardLocal(activeId, to, index)
   }
 
+  function cancelDrag(id: string | number) {
+    const original = originBoard.current
+    setActiveCard(null)
+    setActiveColumn(null)
+    originBoard.current = null
+    if (original && typeof id === 'number') {
+      useStore.setState(s => s.board?.id === original.id
+        ? { board: restoreBoardCard(s.board, original, id) } : {})
+    }
+  }
+
   async function onDragEnd(e: DragEndEvent) {
     const { active, over } = e
     setActiveCard(null)
@@ -161,7 +172,7 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
     }
 
     if (!over) {
-      await reloadBoard()
+      cancelDrag(active.id)
       return
     }
     const cardId = Number(active.id)
@@ -188,9 +199,8 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
     }
 
     const finalList = useStore.getState().board?.columns.find((c) => c.id === col)?.cards ?? []
-    const finalIdx = finalList.findIndex((c) => c.id === cardId)
-    const beforeId = finalIdx >= 0 && finalIdx + 1 < finalList.length ? finalList[finalIdx + 1].id : 0
-    originColumn.current = null
+    const beforeId = cardBeforeId(finalList, cardId)
+    originBoard.current = null
 
     try {
       const saved = await api.moveCard(cardId, col, beforeId)
@@ -274,12 +284,7 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
-      onDragCancel={() => {
-        setActiveCard(null)
-        setActiveColumn(null)
-        originColumn.current = null
-        void reloadBoard()
-      }}
+      onDragCancel={({ active }) => cancelDrag(active.id)}
     >
       <BoardDragScroll />
       <div
