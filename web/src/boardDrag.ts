@@ -9,7 +9,11 @@ export const boardCollision:CollisionDetection=args=>{
  if(!hit)return []
  const id=Number(String(hit.id).replace('col:',''))
  const cards=args.droppableContainers.filter(c=>c.data.current?.type==='card'&&c.data.current?.columnId===id)
- return cards.length?closestCenter({...args,droppableContainers:cards}):[hit]
+ // Rank card slots by the pointer, not the dragged card's centre. The latter
+ // drifts during scrolling (especially when a virtualized source stays mounted).
+ const point=args.pointerCoordinates
+ const collisionRect=point?{top:point.y,bottom:point.y,left:point.x,right:point.x,width:0,height:0}:args.collisionRect
+ return cards.length?closestCenter({...args,collisionRect,droppableContainers:cards}):[hit]
 }
 export function moveBoardCard(board:BoardDetail,id:number,columnId:number,index:number):BoardDetail {
  const card=board.columns.flatMap(col=>col.cards).find(c=>c.id===id)

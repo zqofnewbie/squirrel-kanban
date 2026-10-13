@@ -1,3 +1,4 @@
+import BoardDragScroll from './BoardDragScroll'
 import { boardCollision, cardDropAnimation } from './boardDrag'
 import ColumnDragPreview, { captureColumn } from './ColumnDragPreview'
 import { useLanguage } from './useLanguage'
@@ -267,6 +268,7 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
 
   return (
     <DndContext
+      autoScroll={false}
       sensors={sensors}
       collisionDetection={collisionDetection}
       onDragStart={onDragStart}
@@ -279,6 +281,7 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
         void reloadBoard()
       }}
     >
+      <BoardDragScroll />
       <div
         className="kanban-columns flex gap-3"
         style={{ alignItems: 'stretch', height: height ?? '100%' }}

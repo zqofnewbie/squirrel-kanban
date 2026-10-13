@@ -1,3 +1,4 @@
+import BoardDragScroll from './BoardDragScroll'
 import { createPortal } from 'react-dom'
 import { useContext, useMemo, useRef, useState, type ReactNode } from 'react'
 import { DndContext, DragOverlay, PointerSensor, KeyboardSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core'
@@ -16,7 +17,7 @@ export function SharedDrag({ board, enabled, move, preview, onDragging, children
  const column=(id:string|number)=>typeof id==='string'&&id.startsWith('col:')?Number(id.slice(4)):current.current.columns.find(col=>col.cards.some(c=>c.id===id))?.id
  const update=(id:number,to:number,index:number)=>{current.current=moveBoardCard(current.current,id,to,index);preview(current.current)}
  const cancel=()=>{setActive(null);preview(origin.current);onDragging(false)}
- return <DndContext sensors={sensors} collisionDetection={boardCollision} onDragStart={({active})=>{
+ return <DndContext autoScroll={false} sensors={sensors} collisionDetection={boardCollision} onDragStart={({active})=>{
   origin.current=board;onDragging(true)
   setActive(board.columns.flatMap(col=>col.cards).find(c=>c.id===active.id)??null)
   setWidth((active.rect.current.initial?.width??266*scale)/scale)
@@ -35,7 +36,7 @@ export function SharedDrag({ board, enabled, move, preview, onDragging, children
   const list=current.current.columns.find(col=>col.id===to)!.cards,index=list.findIndex(c=>c.id===active.id)
   setActive(null);onDragging(false)
   await move(Number(active.id),to,list[index+1]?.id??0)
- }}>{children}{createPortal(<DragOverlay adjustScale={false} dropAnimation={cardDropAnimation}>{active&&<div className="card-drag-preview rounded-[10px]" style={{zoom:scale,width}}><CardTile overlay card={active} dimmed={false} onOpen={()=>{}} onRename={async()=>{}}/></div>}</DragOverlay>,document.body)}</DndContext>
+ }}><BoardDragScroll />{children}{createPortal(<DragOverlay adjustScale={false} dropAnimation={cardDropAnimation}>{active&&<div className="card-drag-preview rounded-[10px]" style={{zoom:scale,width}}><CardTile overlay card={active} dimmed={false} onOpen={()=>{}} onRename={async()=>{}}/></div>}</DragOverlay>,document.body)}</DndContext>
 }
 export function SharedDropColumn({id,cards,children,enabled}:{id:number;cards:Card[];children:ReactNode;enabled:boolean}) {
  // Preserve sorting transitions across useDroppable pointer updates.
