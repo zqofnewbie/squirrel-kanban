@@ -1,3 +1,4 @@
+import { focusElement, keyboardFocus } from './focus'
 import { cardTransition } from './boardDrag'
 import { api } from './api'
 import { useStore } from './store'
@@ -8,7 +9,7 @@ import { BoardScale } from './BoardZoom'
 import CardPeek from './CardPeek'
 import type { CardSection } from './store'
 import Icon from './Icon'
-import { memo, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Card } from './types'
@@ -38,7 +39,20 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
     catch (e: any) { setError(e.message || t("保存失败，请重试")) }
     finally { setPinBusy(false) }
   }
+  const tileRef = useRef<HTMLDivElement | null>(null)
+  const attachTile = useCallback((node: HTMLDivElement | null) => { tileRef.current = node; setNodeRef?.(node) }, [setNodeRef])
+  const editKeyboard = useRef(false)
+  const returnFocus = useRef(false)
   const [editing, setEditing] = useState(false)
+  useEffect(() => {
+    if (!editing && returnFocus.current) {
+      returnFocus.current = false
+      // An async save must not steal focus from another control the user chose.
+      if (document.activeElement === document.body || tileRef.current?.contains(document.activeElement)) {
+        focusElement(tileRef.current?.querySelector<HTMLElement>('.card-edit') ?? tileRef.current, editKeyboard.current)
+      }
+    }
+  }, [editing])
   const [draft, setDraft] = useState(card.title)
   const [saving,setSaving]=useState(false)
   const [error,setError]=useState('')
@@ -56,16 +70,18 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
   }, [editing])
 
   function startEdit() {
+    editKeyboard.current = keyboardFocus()
+    returnFocus.current = false
     setDraft(card.title)
     setError('');setEditing(true)
   }
-  async function commit() {
+  async function commit(restore = false) {
     if(savingRef.current)return
     const v=draft.trim()
     if(!v){setError(t("标题不能为空"));return}
-    if(v===card.title){setEditing(false);return}
+    if(v===card.title){returnFocus.current=restore;setEditing(false);return}
     savingRef.current=true;setSaving(true);setError('')
-    try {await onRename(card.id,v);setEditing(false)}catch(e:any){setError(e.message||t("保存失败，请重试"))}finally{savingRef.current=false;setSaving(false)}
+    try {await onRename(card.id,v);returnFocus.current=restore;setEditing(false)}catch(e:any){setError(e.message||t("保存失败，请重试"))}finally{savingRef.current=false;setSaving(false)}
   }
 
   const style: React.CSSProperties = {
@@ -76,7 +92,7 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
 
   return (
     <div
-      ref={setNodeRef}
+      ref={attachTile}
       style={style}
       {...attributes}
       aria-disabled={false}
@@ -141,10 +157,13 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault()
-              void commit()
+              e.stopPropagation()
+              void commit(true)
             }
-            if (e.key === 'Escape' && !saving) {
+            if (e.key === 'Escape' && !saving && !e.nativeEvent.isComposing) {
               e.preventDefault()
+              e.stopPropagation()
+              returnFocus.current = true
               setEditing(false)
             }
           }}

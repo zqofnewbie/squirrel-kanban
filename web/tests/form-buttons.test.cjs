@@ -5,6 +5,7 @@ const vm=require('node:vm')
 const ts=require('typescript')
 const code=ts.transpileModule(fs.readFileSync(require.resolve('../src/ui.tsx'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText
 const context={exports:{},require(name){
+ if(name==='./focus')return {focusElement(){},keyboardFocus:()=>false}
  if(name==='./useLanguage')return {useLanguage(){}}
  if(name==='./i18n')return {t:s=>s}
  if(name==='./Icon')return ()=>null

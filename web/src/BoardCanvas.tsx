@@ -1,3 +1,4 @@
+import { focusElement } from './focus'
 import { createViewportAnchor } from './canvasViewport'
 import { useCanvasFullscreen } from './useCanvasFullscreen'
 import { useLanguage } from './useLanguage'
@@ -186,7 +187,7 @@ export default function BoardCanvas({ board, children }: { board: BoardDetail; c
       </div>
     </div>
     <div className="canvas-tools-group">
-      <CanvasMinimap open={minimap} board={board} viewport={viewport} world={world} zoom={zoom} onClose={() => { setMinimap(false); save('squirrel.minimap', '0'); minimapToggle.current?.focus() }} />
+      <CanvasMinimap open={minimap} board={board} viewport={viewport} world={world} zoom={zoom} onClose={() => { setMinimap(false); save('squirrel.minimap', '0'); focusElement(minimapToggle.current) }} />
       <div className="canvas-tools" role="toolbar" aria-label={t("画布工具")}>
         <ToolHint text={pan ? t("拖动画布 · Esc 退出") : t("H 切换 · 空格拖动 · 鼠标中键")} align="start">
           <button className={cx('canvas-pan-button', pan && 'selected')} aria-label={t("移动画布")} aria-pressed={pan} onClick={() => setPan(value => !value)}><Icon name="hand" size={16} /><span>{t("移动画布")}</span></button>

@@ -1,3 +1,4 @@
+import { focusElement, keyboardFocus } from './focus'
 import { useLanguage } from './useLanguage'
 import { t, locale } from './i18n'
 import Icon from './Icon'
@@ -334,8 +335,8 @@ export function Menu({ trigger, children, align = 'right', width = 200, matchTri
   const menu = useRef<HTMLDivElement>(null)
   const id = useId()
   const focusLast = useRef(false)
-  const focusTrigger = () => box.current?.querySelector<HTMLButtonElement>('button')?.focus()
-  const close = () => { setOpen(false); focusTrigger(); requestAnimationFrame(() => { if (document.activeElement === document.body) focusTrigger() }) }
+  const focusTrigger = (visible = keyboardFocus()) => focusElement(box.current?.querySelector<HTMLButtonElement>('button'), visible)
+  const close = () => { const visible = keyboardFocus(); setOpen(false); focusTrigger(visible); requestAnimationFrame(() => { if (document.activeElement === document.body) focusTrigger(visible) }) }
   React.useLayoutEffect(() => {
     if (!open) return
     const place = () => {
@@ -362,7 +363,7 @@ export function Menu({ trigger, children, align = 'right', width = 200, matchTri
       if (e.key === 'ArrowUp') next = (index - 1 + list.length) % list.length
       if (e.key === 'Home') next = 0
       if (e.key === 'End') next = list.length - 1
-      if (next !== undefined) { e.preventDefault(); list[next]?.focus() }
+      if (next !== undefined) { e.preventDefault(); focusElement(list[next], true) }
     }
     document.addEventListener('pointerdown', onDown)
     window.addEventListener('keydown', onKey, true)
@@ -374,7 +375,7 @@ export function Menu({ trigger, children, align = 'right', width = 200, matchTri
     if (!open || !position.ready) return
     const input = menu.current?.querySelector<HTMLInputElement>('input, textarea')
     const items = Array.from(menu.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ?? [])
-    ;(input ?? (focusLast.current ? items[items.length - 1] : items[0]))?.focus()
+    focusElement(input ?? (focusLast.current ? items[items.length - 1] : items[0]))
   }, [open, position.ready])
   const control = trigger(open, () => { focusLast.current = false; setOpen(v => !v) })
   return <div className={cx("relative inline-flex min-w-0", className)} ref={box}>
