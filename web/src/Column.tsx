@@ -1,3 +1,4 @@
+import { useDndContext } from '@dnd-kit/core'
 import AutoTextarea from './AutoTextarea'
 import { Empty } from './ui'
 import ColumnScrollFooter from './ColumnScrollFooter'
@@ -49,6 +50,7 @@ export default function ColumnView({
   useLanguage()
   // dnd-kit disables transitions when the items reference changes. Keep it
   // stable during pointer updates so neighbouring cards animate into place.
+  const { active: activeDrag } = useDndContext()
   const cardIds = useMemo(() => col.cards.map(card => card.id), [col.cards])
   const scale = useContext(BoardScale)
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -190,6 +192,7 @@ export default function ColumnView({
         </span>
         <Menu
           openOnHover
+          disabled={!!activeDrag}
           placement="right-start"
           width={210}
           trigger={(_, toggle) => (
@@ -233,7 +236,6 @@ export default function ColumnView({
                 <Icon name="settings" size={16} />{t("设置上限")} </MenuItem>
               <MenuSep />
               <MenuItem
-                danger
                 onClick={() => {
                   close()
                   onClearColumn(col.id)
