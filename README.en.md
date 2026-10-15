@@ -15,14 +15,20 @@ Built with React + Vite, Go and SQLite. Production runs through Docker Compose w
 - Comments, attachment previews, downloads, archiving and restoration. Browser previews support images, PDFs, audio, video and text. Office conversion is optional.
 - Independent share management with fixed short links, live content, expiration, revocation and individual collaboration switches. Guests visit one board without signing in.
 - Chinese / English UI and light / dark themes. Initial preferences follow the browser; explicit choices are remembered.
-- Board backgrounds, canvas pan, zoom and fullscreen, minimap, resizable / collapsible sidebar and keyboard shortcuts.
+- Board backgrounds, canvas pan, zoom and fullscreen, minimap, resizable / collapsible sidebar and keyboard shortcuts. Export a full-board screenshot, including off-screen lists and cards.
 - Virtual rendering for large card lists, SSE updates for signed-in accounts, and foreground share checks every 15 seconds. Unchanged boards are not retransmitted.
+
+### Card details
+
+Manage labels, covers, descriptions and editable checklist items in the side drawer.
 
 ![Template card details — description and checklist](docs/screenshots/card-detail-en.jpg)
 
-![Getting started template — dark theme](docs/screenshots/board-dark-zh.jpg)
+### Dark theme
 
-Screenshots use freshly initialized starter templates, with no personal boards or live sharing credentials. A template is created once when the super administrator first signs in; examples can be edited or deleted. User-written content is preserved when switching the UI language.
+![Getting started template — dark theme](docs/screenshots/board-dark-en.jpg)
+
+Screenshots updated on 2026-10-15 show the current local app with the “Getting started” template board, without passwords or sharing credentials. The English screenshots use the English interface while preserving the original Chinese template content. A template is created once when the super administrator first signs in; examples can be edited or deleted.
 
 ## Local development
 
