@@ -2,6 +2,8 @@
 
 [中文](README.md) · [English](README.en.md)
 
+[GitHub](https://github.com/zqofnewbie/squirrel-kanban) · [Gitee](https://gitee.com/storm07106038/squirrel-kanban)
+
 一个轻量的中英文看板，把想法变成卡片，把计划一步步完成。
 
 React + Vite、Go、SQLite。生产环境通过 Docker Compose 部署，默认一个容器、一个端口，不需要外部数据库或 Redis。适合个人计划、小团队任务和按看板分享协作。
@@ -172,7 +174,7 @@ go vet ./...
 
 Git 和 Docker 构建上下文排除运行数据、备份、凭据、依赖目录、构建产物和浏览器诊断记录；可发布的模板截图位于 `docs/screenshots/`。忽略规则不会删除已提交的 Git 历史。
 
-`.github/workflows/ci.yml` 提供 GitHub Actions 测试与容器冒烟流程；当前仓库在 Gitee，该工作流需在 GitHub 镜像启用或改接 Gitee CI。镜像构建与 Office 预览仍需在实际容器环境验证；已知构建工具漏洞及发布待办见部署检查记录。
+代码同步发布到 GitHub 和 Gitee；`.github/workflows/ci.yml` 在 GitHub 上提供测试与容器冒烟流程。镜像构建与 Office 预览仍需在实际容器环境验证；已知构建工具漏洞及发布待办见部署检查记录。
 
 ## 开源许可与贡献
 

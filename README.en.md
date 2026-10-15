@@ -2,6 +2,8 @@
 
 [中文](README.md) · [English](README.en.md)
 
+[GitHub](https://github.com/zqofnewbie/squirrel-kanban) · [Gitee](https://gitee.com/storm07106038/squirrel-kanban)
+
 A lightweight bilingual kanban for turning ideas into tasks and moving work forward.
 
 Built with React + Vite, Go and SQLite. Production runs through Docker Compose with one application container and one port by default. No external database or Redis is required.
@@ -35,7 +37,7 @@ Screenshots updated on 2026-10-15 show the current local app with the “Getting
 Requirements: **Go 1.26+, Node.js 22.12+ and npm**. Prefer a supported Go release. Use the committed `package-lock.json`; do not mix package managers.
 
 ```sh
-git clone https://gitee.com/storm07106038/squirrel-kanban.git
+git clone https://github.com/zqofnewbie/squirrel-kanban.git
 cd squirrel-kanban
 ./dev.sh
 ```
@@ -172,7 +174,7 @@ go vet ./...
 
 Git and Docker exclude runtime data, backups, credentials, dependencies, build output and browser diagnostics. Publishable template screenshots live in `docs/screenshots/`. Ignore rules do not remove previously committed history.
 
-`.github/workflows/ci.yml` provides GitHub Actions verification and container smoke tests. The current origin is Gitee: enable the workflow on a GitHub mirror or adapt it for Gitee CI. Real container builds and Office preview tests still require a running Docker engine. Known development-tool vulnerabilities and release blockers are recorded in the deployment review.
+The repository is published on both GitHub and Gitee. `.github/workflows/ci.yml` provides verification and container smoke tests on GitHub. Real container builds and Office preview tests still require a running Docker engine. Known development-tool vulnerabilities and release blockers are recorded in the deployment review.
 
 ## License and contribution
 
