@@ -365,7 +365,7 @@ button, a { touch-action: manipulation; }
 .dark .card-tile:hover { border-color: #627086; }
 .card-edit { top: 7px; right: 7px; z-index: 1; width: 24px; height: 24px; border: 0; background: transparent; border-radius: 5px; }
 .card-edit:hover { background: var(--surface-hover); color: var(--accent); }
-.card-title { padding-right: 22px; }
+.card-title { min-width:0; padding-right:0; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
 .card-tile.has-cover { padding-top: 51px; }
 .card-cover { position: absolute; inset: 0 0 auto; height: 38px; border-radius: 7px 7px 0 0; pointer-events: none; }
 .card-description { margin-top: 6px; color: var(--muted); font-size: 12px; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
@@ -913,3 +913,12 @@ html.canvas-fullscreen, .canvas-fullscreen body, .canvas-fullscreen #root { heig
 .auto-textarea::-webkit-scrollbar { width:5px; }
 .auto-textarea::-webkit-scrollbar-thumb { background:color-mix(in srgb, var(--muted) 30%, transparent); border-radius:8px; }
 .auto-textarea::-webkit-scrollbar-button { display:none; width:0; height:0; }
+
+/* Reserve an action rail so hovering never changes title wrapping. */
+.card-title-row { display:flex; align-items:flex-start; gap:8px; }
+.card-title-row > .card-title { flex:1; }
+.card-actions { display:flex; gap:2px; flex:0 0 50px; min-height:24px; justify-content:flex-end; }
+.card-actions .card-pin, .card-actions .card-edit { position:static; display:grid; place-items:center; flex:0 0 24px; width:24px; height:24px; background:transparent; transition:opacity .15s; }
+.card-actions .card-pin:hover, .card-actions .card-edit:hover { color:var(--accent); background:var(--surface-hover); }
+.card-tile:focus-within .card-pin { opacity:1; }
+@media (hover:none) { .card-actions .card-edit { opacity:1; } }

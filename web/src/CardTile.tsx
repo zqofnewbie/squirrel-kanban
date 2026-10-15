@@ -116,8 +116,6 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
         isDragging && 'is-dragging',
       )}
     >
-      {!editing && !overlay && canEdit && <button className="card-edit" aria-label={t("编辑标题：{0}", [card.title])} title={t("编辑标题")} onPointerDown={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); startEdit() }}><Icon name="edit" size={15} /></button>}
-      {!editing && !overlay && canPin && <button className={`card-pin ${card.pinned ? 'is-pinned' : ''}`} aria-label={t(card.pinned ? "取消固定" : "固定到列表顶部")} title={t(card.pinned ? "取消固定" : "固定到列表顶部")} aria-pressed={!!card.pinned} disabled={pinBusy} onPointerDown={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); void togglePin() }}><Icon name="pin" size={14} /></button>}
       {card.pinned && <div className="card-pin-label"><Icon name="pin" size={12} />{t("已固定")}</div>}
       {!editing && error && <p role="alert" className="text-xs text-red-600">{error}</p>}
       {card.cover && (
@@ -167,7 +165,13 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
           className="w-full resize-none overflow-hidden rounded-md border border-brand-400 bg-white px-1.5 py-0.5 text-[13px] leading-[1.55] outline-none dark:bg-white/[0.08]"
         />
       ) : (
-        <div className="card-title break-words text-[13px] leading-[1.55]">{card.title}</div>
+        <div className="card-title-row">
+          <div className="card-title break-words text-[13px] leading-[1.55]">{card.title}</div>
+          {(canPin || canEdit) && <div className="card-actions" aria-hidden={overlay || undefined}>
+            {!overlay && canPin && <button className={`card-pin ${card.pinned ? 'is-pinned' : ''}`} aria-label={t(card.pinned ? "取消固定" : "固定到列表顶部")} title={t(card.pinned ? "取消固定" : "固定到列表顶部")} aria-pressed={!!card.pinned} disabled={pinBusy} onPointerDown={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); void togglePin() }}><Icon name="pin" size={14} /></button>}
+            {!overlay && canEdit && <button className="card-edit" aria-label={t("编辑标题：{0}", [card.title])} title={t("编辑标题")} onPointerDown={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); startEdit() }}><Icon name="edit" size={15} /></button>}
+          </div>}
+        </div>
       )}
 
       {error && <p role="alert" className="mt-1 text-xs text-red-600">{error}</p>}
