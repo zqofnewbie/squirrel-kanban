@@ -30,8 +30,6 @@ React + Vite、Go、SQLite。生产环境通过 Docker Compose 部署，默认�
 
 ![开始使用模板 · 深色看板](docs/screenshots/board-dark-zh.jpg)
 
-截图更新于 2026-10-15，取自本地运行的「开始使用 · 模板看板」，展示当前版本界面，不含密码或分享凭据。模板在超级管理员首次登录时创建一次，可以自由编辑或删除。
-
 ## 本地开发
 
 需要 **Go 1.26+、Node.js 22.12+、npm**；建议使用仍受支持的 Go 版本。项目使用 `package-lock.json`，不混用包管理器。

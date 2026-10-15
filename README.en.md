@@ -30,8 +30,6 @@ Manage labels, covers, descriptions and editable checklist items in the side dra
 
 ![Getting started template — dark theme](docs/screenshots/board-dark-en.jpg)
 
-Screenshots updated on 2026-10-15 show the current local app with the “Getting started” template board, without passwords or sharing credentials. The English screenshots use the English interface while preserving the original Chinese template content. A template is created once when the super administrator first signs in; examples can be edited or deleted.
-
 ## Local development
 
 Requirements: **Go 1.26+, Node.js 22.12+ and npm**. Prefer a supported Go release. Use the committed `package-lock.json`; do not mix package managers.
