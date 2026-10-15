@@ -335,10 +335,10 @@ export function Menu({ trigger, children, align = 'right', width = 200, matchTri
   const id = useId()
   const hoverOpened = useRef(false)
   const hoverTimer = useRef<ReturnType<typeof setTimeout>>()
-  const clearHover = () => { clearTimeout(hoverTimer.current) }
+  const clearHover = () => { clearTimeout(hoverTimer.current); hoverTimer.current = undefined }
   useEffect(() => () => clearTimeout(hoverTimer.current), [])
   const hoverEnter = () => { clearHover(); if (openOnHover && !open) { hoverOpened.current = true; setOpen(true) } }
-  const hoverLeave = () => { if (openOnHover && hoverOpened.current) hoverTimer.current = setTimeout(() => setOpen(false), 180) }
+  const hoverLeave = () => { if (openOnHover && hoverOpened.current) { clearHover(); hoverTimer.current = setTimeout(() => setOpen(false), 250) } }
   const focusLast = useRef(false)
   const focusTrigger = (visible = keyboardFocus()) => focusElement(box.current?.querySelector<HTMLButtonElement>('button'), visible)
   const close = () => { const visible = keyboardFocus(); setOpen(false); focusTrigger(visible); requestAnimationFrame(() => { if (document.activeElement === document.body) focusTrigger(visible) }) }
@@ -370,12 +370,28 @@ export function Menu({ trigger, children, align = 'right', width = 200, matchTri
       if (e.key === 'End') next = list.length - 1
       if (next !== undefined) { e.preventDefault(); focusElement(list[next], true) }
     }
+    // Treat the small gap between the trigger and its portal as part of the menu.
+    const onMove = (event: PointerEvent) => {
+      if (!openOnHover || !hoverOpened.current || event.pointerType !== 'mouse') return
+      const a = box.current?.getBoundingClientRect(), b = menu.current?.getBoundingClientRect()
+      if (!a || !b) return
+      const inside = (r: DOMRect) => event.clientX >= r.left && event.clientX <= r.right && event.clientY >= r.top && event.clientY <= r.bottom
+      const gapTop = b.bottom <= a.top ? b.bottom : a.bottom
+      const gapBottom = b.bottom <= a.top ? a.top : b.top
+      const bridge = event.clientX >= Math.min(a.left, b.left) && event.clientX <= Math.max(a.right, b.right) && event.clientY >= gapTop && event.clientY <= gapBottom
+      if (inside(a) || inside(b) || bridge) clearHover()
+      else if (!hoverTimer.current) hoverLeave()
+    }
+    const observer = new ResizeObserver(place)
+    if (menu.current) observer.observe(menu.current)
+    document.addEventListener('pointermove', onMove)
+    document.addEventListener('fullscreenchange', place)
     document.addEventListener('pointerdown', onDown)
     window.addEventListener('keydown', onKey, true)
     window.addEventListener('resize', place)
     window.addEventListener('scroll', place, true)
-    return () => { document.removeEventListener('pointerdown', onDown); window.removeEventListener('keydown', onKey, true); window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true) }
-  }, [open, align, width, matchTriggerWidth, placement])
+    return () => { observer.disconnect(); document.removeEventListener('pointermove', onMove); document.removeEventListener('fullscreenchange', place); document.removeEventListener('pointerdown', onDown); window.removeEventListener('keydown', onKey, true); window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true) }
+  }, [open, align, width, matchTriggerWidth, placement, openOnHover])
   useEffect(() => {
     if (!open || !position.ready || hoverOpened.current) return
     const input = menu.current?.querySelector<HTMLInputElement>('input, textarea')
