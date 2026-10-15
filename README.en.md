@@ -189,3 +189,7 @@ The API requires changing the initial password. Changing a password revokes othe
 sessions. Card titles allow 250 Unicode characters and descriptions 20000, with
 identical validation for signed-in users and shared editors. Shared editors are
 warned before discarding unsaved changes.
+
+## Recommended project
+
+Try my other project, [PicOptima](https://picoptima.ai): an online image toolkit for compression, format conversion, cropping, resizing, AI background removal, annotations, collages and batch export.
