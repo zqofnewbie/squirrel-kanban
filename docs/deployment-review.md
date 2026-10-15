@@ -29,7 +29,7 @@
 - **完整多阶段 Docker 构建未完成**：Docker Hub 基础镜像层下载持续十多分钟仍未完成，已停止本次下载。运行阶段验证不能代替 `docker compose up -d --build --wait` 的完整构建结果。
 - 可选 Gotenberg 的真实 Office 转换已加入 CI，但本机尚未完成镜像下载和实跑；现有 Go 转换接口测试通过。
 - Windows 原生界面、字体及触控板手势未在本机验证。CI 已改为三平台实际启动，不再仅执行跳过 smoke 的检查；远端 CI 未在此记录中宣称已执行。
-- Gitee 未配置外部 CI；GitHub workflow 仅在 GitHub 镜像运行。可按 `release-checklist.md` 在所选 Gitee runner 执行相同命令。
+- GitHub 是主仓库，CI workflow 在 GitHub 运行；Gitee 作为代码镜像，未单独配置外部 CI。本地验证步骤见 `release-checklist.md`。
 - Git 历史中的 `login.yaml` 登录快照需要协调清理及凭据轮换。普通提交、ignore 和 MIT 文件不会清理旧历史。远端历史重写需单独确认；旧克隆、缓存和派生仓库也需处理。
 - 尚未发布或签名容器镜像；签名发布需要所有者选定的镜像仓库与凭据，CI 仅生成验证产物。
 

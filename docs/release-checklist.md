@@ -60,8 +60,8 @@ See [deployment guide](deployment.md). Do not run `down -v` on real data.
 
 CI startup smoke covers Linux/macOS/Windows; this is not a substitute for native
 visual/gesture checks. `.github/workflows/ci.yml` runs on the GitHub repository; Gitee mirrors the source.
-For Gitee, run these commands in the project's chosen CI runner; no Gitee runner
-or external credential is configured by this repository.
+GitHub is the primary repository for CI, issues and pull requests. Gitee is a code
+mirror with no separate CI runner; run the checks above for local verification.
 
 ## Publication / 公开发布
 

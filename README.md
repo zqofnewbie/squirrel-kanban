@@ -2,7 +2,7 @@
 
 [中文](README.md) · [English](README.en.md)
 
-[GitHub](https://github.com/zqofnewbie/squirrel-kanban) · [Gitee](https://gitee.com/storm07106038/squirrel-kanban)
+[GitHub 主仓库](https://github.com/zqofnewbie/squirrel-kanban) · [Gitee 国内镜像](https://gitee.com/storm07106038/squirrel-kanban)
 
 一个轻量的中英文看板，把想法变成卡片，把计划一步步完成。
 
@@ -37,7 +37,7 @@ React + Vite、Go、SQLite。生产环境通过 Docker Compose 部署，默认�
 需要 **Go 1.26+、Node.js 22.12+、npm**；建议使用仍受支持的 Go 版本。项目使用 `package-lock.json`，不混用包管理器。
 
 ```sh
-git clone https://gitee.com/storm07106038/squirrel-kanban.git
+git clone https://github.com/zqofnewbie/squirrel-kanban.git
 cd squirrel-kanban
 ./dev.sh
 ```
@@ -174,11 +174,11 @@ go vet ./...
 
 Git 和 Docker 构建上下文排除运行数据、备份、凭据、依赖目录、构建产物和浏览器诊断记录；可发布的模板截图位于 `docs/screenshots/`。忽略规则不会删除已提交的 Git 历史。
 
-代码同步发布到 GitHub 和 Gitee；`.github/workflows/ci.yml` 在 GitHub 上提供测试与容器冒烟流程。镜像构建与 Office 预览仍需在实际容器环境验证；已知构建工具漏洞及发布待办见部署检查记录。
+GitHub 是项目主仓库，Gitee 作为国内代码镜像同步更新；`.github/workflows/ci.yml` 在 GitHub 上提供测试与容器冒烟流程。镜像构建与 Office 预览仍需在实际容器环境验证；已知构建工具漏洞及发布待办见部署检查记录。
 
 ## 开源许可与贡献
 
-反馈与贡献统一在 GitHub 处理：[提交问题或建议](https://github.com/zqofnewbie/squirrel-kanban/issues) · [提交 Pull Request](https://github.com/zqofnewbie/squirrel-kanban/pulls)。Gitee 作为国内代码同步仓库，请勿两边重复提交。安全问题请使用[私密漏洞报告](https://github.com/zqofnewbie/squirrel-kanban/security/advisories/new)。
+反馈与贡献统一在 GitHub 处理：[提交问题或建议](https://github.com/zqofnewbie/squirrel-kanban/issues) · [提交 Pull Request](https://github.com/zqofnewbie/squirrel-kanban/pulls)。Gitee 作为国内代码镜像，请勿两边重复提交。安全问题请使用[私密漏洞报告](https://github.com/zqofnewbie/squirrel-kanban/security/advisories/new)。
 
 本项目采用 [MIT 许可证](LICENSE)，允许商用、修改和再分发，请保留版权与许可声明。
 第三方依赖和字体保留各自许可，见 [第三方说明](THIRD_PARTY_NOTICES.md)。

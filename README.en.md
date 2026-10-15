@@ -2,7 +2,7 @@
 
 [中文](README.md) · [English](README.en.md)
 
-[GitHub](https://github.com/zqofnewbie/squirrel-kanban) · [Gitee](https://gitee.com/storm07106038/squirrel-kanban)
+[GitHub — primary repository](https://github.com/zqofnewbie/squirrel-kanban) · [Gitee — mirror in China](https://gitee.com/storm07106038/squirrel-kanban)
 
 A lightweight bilingual kanban for turning ideas into tasks and moving work forward.
 
@@ -174,7 +174,7 @@ go vet ./...
 
 Git and Docker exclude runtime data, backups, credentials, dependencies, build output and browser diagnostics. Publishable template screenshots live in `docs/screenshots/`. Ignore rules do not remove previously committed history.
 
-The repository is published on both GitHub and Gitee. `.github/workflows/ci.yml` provides verification and container smoke tests on GitHub. Real container builds and Office preview tests still require a running Docker engine. Known development-tool vulnerabilities and release blockers are recorded in the deployment review.
+GitHub is the primary repository; Gitee is a synchronized mirror for users in China. `.github/workflows/ci.yml` provides verification and container smoke tests on GitHub. Real container builds and Office preview tests still require a running Docker engine. Known development-tool vulnerabilities and release blockers are recorded in the deployment review.
 
 ## License and contribution
 
