@@ -1,3 +1,4 @@
+import CaptureBoard from './CaptureBoard'
 import { shortcut, primaryKey } from './shortcuts'
 import { notify } from './notifications'
 import { useLanguage } from './useLanguage'
@@ -314,7 +315,7 @@ export default function App() {
           <div className="board-content">
             <div className="board-toolbar">
               <div className="board-heading"><h1 title={board.name}>{board.name}</h1><p title={board.description || t("理清思路，让每一件事都有进展。")}>{board.description || t("理清思路，让每一件事都有进展。")}</p></div>
-              <div className="board-toolbar-actions"><Button aria-label={t("看板外观")} onClick={() => setAppearanceOpen(true)}><Icon name="settings" size={16} />{t("外观")}</Button><Button onClick={() => setShareTarget({boardId:board.id})}><Icon name="share" size={16} />{t("分享")}</Button><button className="toolbar-secondary" onClick={() => setArchiveOpen(true)}><Icon name="archive" size={16} />{t("归档箱")}</button></div>
+              <div className="board-toolbar-actions"><Button aria-label={t("看板外观")} onClick={() => setAppearanceOpen(true)}><Icon name="settings" size={16} />{t("外观")}</Button><Button onClick={() => setShareTarget({boardId:board.id})}><Icon name="share" size={16} />{t("分享")}</Button><CaptureBoard board={board} /><button className="toolbar-secondary" onClick={() => setArchiveOpen(true)}><Icon name="archive" size={16} />{t("归档箱")}</button></div>
             </div>
             <div className="board-viewbar"><span className="active-view"><Icon name="board" size={16} />{t("看板视图")}</span><span>{countText(board.columns.length, 'lists')} · {countText(board.columns.reduce((n,c)=>n+c.cards.length,0), 'cards')}</span>{search && <button onClick={() => setSearch('')}>{t("清除筛选")}<Icon name="close" size={13} /></button>}<button className="board-help" onClick={() => setHelpOpen(true)}>{t("拖动卡片推进任务 · N 快速建卡")}</button></div>
             {loading && <div role="status" className="loading-bar">{t("正在切换看板…")}</div>}

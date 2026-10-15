@@ -8,7 +8,7 @@ func (s *Store) CreateCard(columnID int64, title string, createdBy int64) (*Card
 	if strings.TrimSpace(title) == "" {
 		title = "新卡片"
 	}
-	pos, err := s.firstPos("cards", "column_id", columnID)
+	pos, err := s.nextPos("cards", "column_id", columnID, 0)
 	if err != nil {
 		return nil, err
 	}

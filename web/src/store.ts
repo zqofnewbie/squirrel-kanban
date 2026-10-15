@@ -264,7 +264,7 @@ export const useStore = create<State>((set, get) => ({
           ...s.board,
           columns: s.board.columns.map((col) => {
             if (col.id !== c.column_id) return col
-            // 服务端把新卡片放到列首（position 最小），这里按 position 排序保证位置正确
+            // 新卡片追加到列尾；仍按固定优先、position 排序与服务端保持一致
             const cards = [...col.cards.filter((x) => x.id !== c.id), c].sort(
               (a, b) => Number(!!b.pinned) - Number(!!a.pinned) || a.position - b.position,
             )

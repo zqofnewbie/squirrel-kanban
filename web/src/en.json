@@ -705,5 +705,9 @@
   "切换画布全屏，Esc 退出": "Toggle canvas fullscreen; Esc to exit",
   "在悬停列表快速添加卡片，默认第一列": "Add a card to the hovered list, or the first list by default",
   "编辑清单项": "Edit checklist item",
-  "编辑清单项：{0}": "Edit checklist item: {0}"
+  "编辑清单项：{0}": "Edit checklist item: {0}",
+  "截图": "Screenshot",
+  "正在截图…": "Capturing…",
+  "画布截图已下载": "Canvas screenshot downloaded",
+  "截图失败，请重试": "Screenshot failed. Please try again."
 }

@@ -138,8 +138,8 @@ func TestCardMoveAndArchivePersist(t *testing.T) {
 		t.Fatal(err)
 	}
 	detail, _ = s.GetBoardDetail(b.ID)
-	if detail.Columns[0].Cards[0].ID != c.ID {
-		t.Fatal("新卡片应在列首")
+	if detail.Columns[0].Cards[len(detail.Columns[0].Cards)-1].ID != c.ID {
+		t.Fatal("新卡片应追加在列尾")
 	}
 	if _, err = s.MoveCard(c.ID, second, 0); err != nil {
 		t.Fatal(err)
