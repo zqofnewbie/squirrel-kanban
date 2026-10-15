@@ -65,7 +65,7 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
       el.focus()
       el.setSelectionRange(el.value.length, el.value.length)
       el.style.height = 'auto'
-      el.style.height = el.scrollHeight + 'px'
+      el.style.height = Math.ceil(el.scrollHeight + el.offsetHeight - el.clientHeight) + 'px'
     }
   }, [editing])
 
@@ -151,7 +151,7 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
           onChange={(e) => {
             setDraft(e.target.value)
             e.target.style.height = 'auto'
-            e.target.style.height = e.target.scrollHeight + 'px'
+            e.target.style.height = Math.ceil(e.target.scrollHeight + e.target.offsetHeight - e.target.clientHeight) + 'px'
           }}
           onBlur={()=>void commit()}
           onKeyDown={(e) => {
@@ -167,7 +167,7 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
               setEditing(false)
             }
           }}
-          className="w-full resize-none rounded-md border border-brand-400 bg-white px-1.5 py-0.5 text-[13px] leading-[1.55] outline-none dark:bg-white/[0.08]"
+          className="w-full resize-none overflow-hidden rounded-md border border-brand-400 bg-white px-1.5 py-0.5 text-[13px] leading-[1.55] outline-none dark:bg-white/[0.08]"
         />
       ) : (
         <div className="card-title break-words text-[13px] leading-[1.55]">{card.title}</div>
