@@ -88,28 +88,14 @@ func (s *Store) GetBoard(id int64) (*Board, error) {
 	return &b, nil
 }
 
-func (s *Store) UpdateBoard(id int64, name, description, background string, archive *bool) error {
-	if name != "" {
-		if _, err := s.db.Exec("UPDATE boards SET name=?, updated_at=? WHERE id=?", name, nowISO(), id); err != nil {
-			return err
-		}
-	}
-	if description != "" {
-		if _, err := s.db.Exec("UPDATE boards SET description=?, updated_at=? WHERE id=?", description, nowISO(), id); err != nil {
-			return err
-		}
-	}
-	if background != "" {
-		if _, err := s.db.Exec("UPDATE boards SET background=?, updated_at=? WHERE id=?", background, nowISO(), id); err != nil {
-			return err
-		}
-	}
-	if archive != nil {
-		if _, err := s.db.Exec("UPDATE boards SET archived=?, updated_at=? WHERE id=?", boolInt(*archive), nowISO(), id); err != nil {
-			return err
-		}
-	}
-	return nil
+// UpdateBoard applies all fields atomically; nil description means unchanged,
+// while a pointer to an empty string explicitly clears it.
+func (s *Store) UpdateBoard(id int64, name string, description *string, background string, archive *bool) error {
+	_, err := s.db.Exec(`UPDATE boards SET
+ name=COALESCE(NULLIF(?, ''), name), description=COALESCE(?, description),
+ background=COALESCE(NULLIF(?, ''), background), archived=COALESCE(?, archived),
+ updated_at=? WHERE id=?`, name, description, background, archive, nowISO(), id)
+	return err
 }
 
 func (s *Store) DeleteBoard(id int64) error {

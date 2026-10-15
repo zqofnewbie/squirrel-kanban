@@ -421,7 +421,7 @@ func (s *Server) handleSharedEdit(w http.ResponseWriter, r *http.Request, sh *Bo
 		Description *string `json:"description"`
 		DueDate     *string `json:"due_date"`
 	}
-	if shareDecode(r, &req) != nil || (req.Title != nil && (strings.TrimSpace(*req.Title) == "" || len(*req.Title) > 1000)) {
+	if shareDecode(r, &req) != nil {
 		writeErr(w, 400, "请求格式不正确")
 		return
 	}
@@ -438,23 +438,9 @@ func (s *Server) handleSharedEdit(w http.ResponseWriter, r *http.Request, sh *Bo
 	if req.Cover != nil && !requireShare(w, sh.Permissions.Cover) {
 		return
 	}
-	if req.Cover != nil && *req.Cover != "" {
-		if len(*req.Cover) != 7 || (*req.Cover)[0] != '#' {
-			writeErr(w, 400, "请求格式不正确")
-			return
-		}
-		for _, ch := range (*req.Cover)[1:] {
-			if !strings.ContainsRune("0123456789abcdefABCDEF", ch) {
-				writeErr(w, 400, "请求格式不正确")
-				return
-			}
-		}
-	}
-	if req.DueDate != nil && *req.DueDate != "" {
-		if _, err := time.Parse("2006-01-02", *req.DueDate); err != nil {
-			writeErr(w, 400, "日期格式不正确")
-			return
-		}
+	if err := validateCardFields(req.Title, req.Description, req.DueDate, req.Cover); err != nil {
+		writeErr(w, 400, err.Error())
+		return
 	}
 	c, err := s.store.UpdateCard(id, CardPatch{Pinned: req.Pinned, Cover: req.Cover, Title: req.Title, Description: req.Description, DueDate: req.DueDate})
 	if err != nil {
@@ -518,8 +504,8 @@ func (s *Server) handleSharedCreate(w http.ResponseWriter, r *http.Request, sh *
 	var req struct {
 		Title string `json:"title"`
 	}
-	if shareDecode(r, &req) != nil || strings.TrimSpace(req.Title) == "" || len(req.Title) > 1000 {
-		writeErr(w, 400, "请填写卡片标题（最多 1000 字节）")
+	if shareDecode(r, &req) != nil || validateCardFields(&req.Title, nil, nil, nil) != nil {
+		writeErr(w, 400, "标题需要 1–250 个字符")
 		return
 	}
 	c, err := s.store.CreateCard(col, strings.TrimSpace(req.Title), 0)

@@ -70,10 +70,10 @@ func (s *Server) handleGetBoard(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleUpdateBoard(w http.ResponseWriter, r *http.Request) {
 	id := pathID(r, "id")
 	var req struct {
-		Name        string `json:"name"`
-		Description string `json:"description"`
-		Background  string `json:"background"`
-		Archived    *bool  `json:"archived"`
+		Name        string  `json:"name"`
+		Description *string `json:"description"`
+		Background  string  `json:"background"`
+		Archived    *bool   `json:"archived"`
 	}
 	if err := decode(r, &req); err != nil {
 		writeErr(w, http.StatusBadRequest, "请求格式不正确")

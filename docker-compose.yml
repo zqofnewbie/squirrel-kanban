@@ -36,4 +36,4 @@ services:
 
 volumes:
   kanban-data:
-    name: squirrel-kanban-data
+    name: ${KANBAN_VOLUME:-squirrel-kanban-data}

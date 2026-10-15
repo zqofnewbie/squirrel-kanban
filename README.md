@@ -26,7 +26,7 @@ React + Vite、Go、SQLite。生产环境通过 Docker Compose 部署，默认�
 
 ## 本地开发
 
-需要 **Go 1.24+、Node.js 22+、npm**；建议使用仍受支持的 Go 版本。项目使用 `package-lock.json`，不混用包管理器。
+需要 **Go 1.26+、Node.js 22.12+、npm**；建议使用仍受支持的 Go 版本。项目使用 `package-lock.json`，不混用包管理器。
 
 ```sh
 git clone https://gitee.com/storm07106038/squirrel-kanban.git
@@ -168,6 +168,16 @@ Git 和 Docker 构建上下文排除运行数据、备份、凭据、依赖目�
 
 `.github/workflows/ci.yml` 提供 GitHub Actions 测试与容器冒烟流程；当前仓库在 Gitee，该工作流需在 GitHub 镜像启用或改接 Gitee CI。镜像构建与 Office 预览仍需在实际容器环境验证；已知构建工具漏洞及发布待办见部署检查记录。
 
-## 许可证
+## 开源许可与贡献
 
-目前尚未选择项目许可证，不提供商用、修改或再分发的开源授权声明。第三方字体授权见 [OFL.txt](web/public/fonts/OFL.txt) 和 [来源说明](web/public/fonts/SOURCE.md)。正式公开发布前还需完成素材授权与 Git 历史检查。
+本项目采用 [MIT 许可证](LICENSE)，允许商用、修改和再分发，请保留版权与许可声明。
+第三方依赖和字体保留各自许可，见 [第三方说明](THIRD_PARTY_NOTICES.md)。
+
+- [贡献指南](CONTRIBUTING.md)：开发、测试和提交规范。
+- [安全说明](SECURITY.md)：认证、公开部署和漏洞报告。
+- [部署与备份恢复](docs/deployment.md)：端口、数据卷、升级及回滚。
+- [发布检查](docs/release-checklist.md)：可重复的回归步骤与环境限制。
+
+首次登录必须修改初始密码；修改密码后其他会话退出。卡片标题上限为 250 个
+Unicode 字符，描述为 20000 个字符，管理员和分享编辑使用同一套后端校验。
+分享编辑关闭前会提醒未保存的修改。

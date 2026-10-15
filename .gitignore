@@ -60,3 +60,8 @@ Desktop.ini
 *.swp
 *.swo
 *~
+
+# Disposable release smoke binaries
+squirrel-test-server
+squirrel-test-server.exe
+release-artifacts/

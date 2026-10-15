@@ -5,7 +5,8 @@
 README*.md
 CONTRIBUTING.md
 SECURITY.md
-docs
+docs/*
+!docs/dependency-licenses.txt
 .codex
 .agents
 .idea
@@ -59,3 +60,9 @@ web/vite.config.ts.timestamp-*.mjs
 **/.DS_Store
 **/Thumbs.db
 **/Desktop.ini
+
+# Optional browser tooling is never part of production builds
+tests/browser
+squirrel-test-server
+squirrel-test-server.exe
+release-artifacts/

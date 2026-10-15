@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"strings"
+	"time"
 )
 
 type loginReq struct {
@@ -17,6 +18,11 @@ type passwordReq struct {
 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	if !validOrigin(w, r) {
+		return
+	}
+	if !s.loginLimits.allow(r, time.Now()) {
+		w.Header().Set("Retry-After", "60")
+		writeErr(w, http.StatusTooManyRequests, "登录尝试过于频繁，请稍后重试")
 		return
 	}
 	var req loginReq
@@ -81,7 +87,8 @@ func (s *Server) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "当前密码不正确")
 		return
 	}
-	if err := s.store.UpdateUser(u.ID, "", "", req.NewPassword, nil, boolPtr(false)); err != nil {
+	cookie, _ := r.Cookie(cookieName)
+	if err := s.store.ChangeOwnPassword(u.ID, req.NewPassword, cookie.Value); err != nil {
 		writeErr(w, http.StatusInternalServerError, "修改失败")
 		return
 	}

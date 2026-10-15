@@ -710,5 +710,10 @@
   "正在截图…": "Capturing…",
   "画布截图已下载": "Canvas screenshot downloaded",
   "截图失败，请重试": "Screenshot failed. Please try again.",
-  "卡片操作": "Card actions"
+  "卡片操作": "Card actions",
+  "请先修改初始密码": "Please change your initial password first",
+  "登录尝试过于频繁，请稍后重试": "Too many login attempts. Please try again later.",
+  "标题需要 1–250 个字符": "Titles must contain 1–250 characters",
+  "描述最多 20000 个字符": "Descriptions allow up to 20000 characters",
+  "封面颜色格式不正确": "Invalid cover color"
 }

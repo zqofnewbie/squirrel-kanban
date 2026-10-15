@@ -23,12 +23,13 @@ var staticFS embed.FS
 
 // Server 持有全部运行时依赖。
 type Server struct {
-	store      *Store
-	hub        *Hub
-	dataDir    string
-	dev        bool
-	previewURL string
-	soffice    string
+	loginLimits loginLimiter
+	store       *Store
+	hub         *Hub
+	dataDir     string
+	dev         bool
+	previewURL  string
+	soffice     string
 }
 
 func main() {

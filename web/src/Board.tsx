@@ -22,7 +22,11 @@ import {
   type DragOverEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
-import { SortableContext, horizontalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable'
 import ColumnView from './Column'
 import CardTile from './CardTile'
 import { api } from './api'
@@ -42,7 +46,9 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
   const setOpenCard = useStore((s) => s.setOpenCard)
 
   const [activeCard, setActiveCard] = useState<Card | null>(null)
-  const [columnSnapshot, setColumnSnapshot] = useState<ReturnType<typeof captureColumn> | null>(null)
+  const [columnSnapshot, setColumnSnapshot] = useState<ReturnType<typeof captureColumn> | null>(
+    null,
+  )
   const [activeColumn, setActiveColumn] = useState<number | null>(null)
   const [colMenu, setColMenu] = useState<{ kind: 'clear' | 'delete'; id: number } | null>(null)
   const [addingCol, setAddingCol] = useState(false)
@@ -64,7 +70,13 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
     if (!keyword) return set
     board.columns.forEach((col) =>
       col.cards.forEach((c) => {
-        const hay = (c.title + ' ' + c.description + ' ' + c.labels.map((l) => l.name).join(' ')).toLowerCase()
+        const hay = (
+          c.title +
+          ' ' +
+          c.description +
+          ' ' +
+          c.labels.map((l) => l.name).join(' ')
+        ).toLowerCase()
         if (!hay.includes(keyword)) set.add(c.id)
       }),
     )
@@ -72,9 +84,12 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
   }, [board, keyword])
 
   const columns = board.columns
-  const columnIds = useMemo(() => columns.map(col => `col:${col.id}`), [columns])
+  const columnIds = useMemo(() => columns.map((col) => `col:${col.id}`), [columns])
 
-  const cardColumns = useMemo(() => new Map(columns.flatMap(col => col.cards.map(card => [card.id, col.id] as const))), [columns])
+  const cardColumns = useMemo(
+    () => new Map(columns.flatMap((col) => col.cards.map((card) => [card.id, col.id] as const))),
+    [columns],
+  )
 
   function resolveColumnId(id: string | number): number | null {
     if (typeof id === 'string' && id.startsWith('col:')) return Number(id.slice(4))
@@ -139,8 +154,9 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
     setActiveColumn(null)
     originBoard.current = null
     if (original && typeof id === 'number') {
-      useStore.setState(s => s.board?.id === original.id
-        ? { board: restoreBoardCard(s.board, original, id) } : {})
+      useStore.setState((s) =>
+        s.board?.id === original.id ? { board: restoreBoardCard(s.board, original, id) } : {},
+      )
     }
   }
 
@@ -166,8 +182,21 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
       if (toIdx === fromIdx) return
       const order = columns.map((c) => c.id).filter((id) => id !== colId)
       order.splice(toIdx, 0, colId)
-      useStore.setState(s => s.board?.id === board.id ? { board: { ...s.board, columns: order.map(id => s.board!.columns.find(c => c.id === id)!) } } : {})
-      try { await api.moveColumn(colId, order[toIdx + 1] ?? 0) } catch { await reloadBoard() }
+      useStore.setState((s) =>
+        s.board?.id === board.id
+          ? {
+              board: {
+                ...s.board,
+                columns: order.map((id) => s.board!.columns.find((c) => c.id === id)!),
+              },
+            }
+          : {},
+      )
+      try {
+        await api.moveColumn(colId, order[toIdx + 1] ?? 0)
+      } catch {
+        await reloadBoard()
+      }
       return
     }
 
@@ -194,7 +223,11 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
       if (overIndex >= 0) {
         const removed = target.cards.filter((c) => c.id !== cardId)
         removed.splice(overIndex, 0, target.cards[index])
-        moveCardLocal(cardId, col, removed.findIndex((c) => c.id === cardId))
+        moveCardLocal(
+          cardId,
+          col,
+          removed.findIndex((c) => c.id === cardId),
+        )
       }
     }
 
@@ -218,7 +251,7 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
   }
 
   async function renameCard(id: number, title: string) {
-    const fresh=await api.updateCard(id,{title})
+    const fresh = await api.updateCard(id, { title })
     updateCardLocal(fresh)
   }
 
@@ -234,7 +267,16 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
 
   async function setColumnColor(id: number, color: string) {
     const saved = await api.updateColumn(id, { color })
-    useStore.setState(s => s.board?.id === board.id ? { board: { ...s.board, columns: s.board.columns.map(col => col.id === id ? { ...col, ...saved } : col) } } : {})
+    useStore.setState((s) =>
+      s.board?.id === board.id
+        ? {
+            board: {
+              ...s.board,
+              columns: s.board.columns.map((col) => (col.id === id ? { ...col, ...saved } : col)),
+            },
+          }
+        : {},
+    )
   }
 
   async function clearColumn(id: number) {
@@ -271,7 +313,10 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
       setColDraft('')
       setAddingCol(false)
       await reloadBoard()
-    } catch {} finally { setSavingColumn(false) }
+    } catch {
+    } finally {
+      setSavingColumn(false)
+    }
   }
 
   const totalCards = columns.reduce((n, c) => n + c.cards.length, 0)
@@ -291,10 +336,7 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
         className="kanban-columns flex gap-3"
         style={{ alignItems: 'stretch', height: height ?? '100%' }}
       >
-        <SortableContext
-          items={columnIds}
-          strategy={horizontalListSortingStrategy}
-        >
+        <SortableContext items={columnIds} strategy={horizontalListSortingStrategy}>
           {columns.map((col) => (
             <ColumnView
               key={col.id}
@@ -321,8 +363,8 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
                 autoFocus
                 value={colDraft}
                 disabled={savingColumn}
-                aria-label={t("新列表名称")}
-                placeholder={t("新列表名称，回车创建")}
+                aria-label={t('新列表名称')}
+                placeholder={t('新列表名称，回车创建')}
                 onChange={(e) => setColDraft(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.nativeEvent.isComposing) submitColumn()
@@ -344,7 +386,8 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
                   disabled={savingColumn || !colDraft.trim()}
                   onClick={submitColumn}
                 >
-                  {t("创建")} </Button>
+                  {t('创建')}{' '}
+                </Button>
                 <Button
                   size="sm"
                   onMouseDown={(e) => e.preventDefault()}
@@ -353,7 +396,8 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
                     setAddingCol(false)
                   }}
                 >
-                  {t("取消")} </Button>
+                  {t('取消')}{' '}
+                </Button>
               </div>
             </div>
           ) : (
@@ -361,38 +405,45 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
               onClick={() => setAddingCol(true)}
               className="add-column-button w-full rounded-xl bg-white/60 px-3 py-2 text-left text-[12.5px] opacity-70 shadow-card hover:bg-white hover:opacity-100 dark:bg-white/[0.06] dark:hover:bg-white/[0.1]"
             >
-              <Icon name="plus" size={16} />{t("添加列表")} </button>
+              <Icon name="plus" size={16} />
+              {t('添加列表')}{' '}
+            </button>
           )}
         </div>
       </div>
 
       <ConfirmDialog
         open={colMenu?.kind === 'clear'}
-        title={t("归档全部卡片")}
+        title={t('归档全部卡片')}
         message={
           colMenu
-            ? t("把「{0}」下的全部卡片移入归档箱？之后可以在看板菜单的归档箱里恢复。", [columns.find((c) => c.id === colMenu.id)?.name])
+            ? t('把「{0}」下的全部卡片移入归档箱？之后可以在看板菜单的归档箱里恢复。', [
+                columns.find((c) => c.id === colMenu.id)?.name,
+              ])
             : ''
         }
-        okText={t("归档")}
+        okText={t('归档')}
         onOK={doColumnAction}
         onClose={() => setColMenu(null)}
       />
       <ConfirmDialog
         open={colMenu?.kind === 'delete'}
         danger
-        title={t("删除列表")}
+        title={t('删除列表')}
         message={
           colMenu
             ? (() => {
                 const col = columns.find((c) => c.id === colMenu.id)
                 return col?.cards.length
-                  ? t("删除「{0}」会一并删除其中 {1} 张卡片，此操作不可恢复。", [col.name, col.cards.length])
-                  : t("确定删除列表「{0}」？", [col?.name])
+                  ? t('删除「{0}」会一并删除其中 {1} 张卡片，此操作不可恢复。', [
+                      col.name,
+                      col.cards.length,
+                    ])
+                  : t('确定删除列表「{0}」？', [col?.name])
               })()
             : ''
         }
-        okText={t("删除")}
+        okText={t('删除')}
         onOK={doColumnAction}
         onClose={() => setColMenu(null)}
       />
@@ -400,20 +451,29 @@ export default function Board({ zoom = 1, height }: { zoom?: number; height?: nu
       {totalCards === 0 && columns.length === 0 && (
         <div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center px-8">
           <div className="w-[320px]">
-            <Empty text={t("先添加一个列表，再开始创建卡片")} />
+            <Empty text={t('先添加一个列表，再开始创建卡片')} />
           </div>
         </div>
       )}
 
-      {createPortal(<DragOverlay adjustScale={false} dropAnimation={cardDropAnimation}>
-        {activeCard ? (
-          <div className="card-drag-preview rounded-[10px]" style={{ zoom, width: dragWidth }}>
-            <CardTile overlay card={activeCard} dimmed={false} onOpen={() => {}} onRename={async () => {}} />
-          </div>
-        ) : activeColumn !== null && columnSnapshot ? (
-          <ColumnDragPreview snapshot={columnSnapshot} zoom={zoom} />
-        ) : null}
-      </DragOverlay>, document.body)}
+      {createPortal(
+        <DragOverlay adjustScale={false} dropAnimation={cardDropAnimation}>
+          {activeCard ? (
+            <div className="card-drag-preview rounded-[10px]" style={{ zoom, width: dragWidth }}>
+              <CardTile
+                overlay
+                card={activeCard}
+                dimmed={false}
+                onOpen={() => {}}
+                onRename={async () => {}}
+              />
+            </div>
+          ) : activeColumn !== null && columnSnapshot ? (
+            <ColumnDragPreview snapshot={columnSnapshot} zoom={zoom} />
+          ) : null}
+        </DragOverlay>,
+        document.body,
+      )}
     </DndContext>
   )
 }

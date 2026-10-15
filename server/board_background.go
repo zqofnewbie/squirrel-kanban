@@ -87,7 +87,7 @@ func (s *Server) handleUploadBackground(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	value := "upload:" + token + ext
-	if err := s.store.UpdateBoard(id, "", "", value, nil); err != nil {
+	if err := s.store.UpdateBoard(id, "", nil, value, nil); err != nil {
 		removeFile(dest)
 		writeErr(w, 500, "保存背景失败")
 		return

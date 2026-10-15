@@ -3,13 +3,25 @@
 let keyboard = false
 let clearRestored: (() => void) | undefined
 if (typeof window !== 'undefined') {
-  window.addEventListener('pointerdown', () => { keyboard = false; document.documentElement.dataset.focusModality = 'pointer'; clearRestored?.() }, true)
-  window.addEventListener('keydown', event => {
-    if (['Shift', 'Control', 'Alt', 'Meta'].includes(event.key)) return
-    keyboard = true
-    document.documentElement.dataset.focusModality = 'keyboard'
-    clearRestored?.()
-  }, true)
+  window.addEventListener(
+    'pointerdown',
+    () => {
+      keyboard = false
+      document.documentElement.dataset.focusModality = 'pointer'
+      clearRestored?.()
+    },
+    true,
+  )
+  window.addEventListener(
+    'keydown',
+    (event) => {
+      if (['Shift', 'Control', 'Alt', 'Meta'].includes(event.key)) return
+      keyboard = true
+      document.documentElement.dataset.focusModality = 'keyboard'
+      clearRestored?.()
+    },
+    true,
+  )
 }
 export const keyboardFocus = () => keyboard
 export function focusElement(element: HTMLElement | null | undefined, visible = keyboard) {

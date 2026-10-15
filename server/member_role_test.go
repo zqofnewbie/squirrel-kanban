@@ -28,6 +28,7 @@ func TestMemberRoleScopeAndRestart(t *testing.T) {
 	}
 	sess, _ := s.CreateSession(id["id"], "")
 	member := &http.Cookie{Name: cookieName, Value: sess.Token}
+	finishInitialPassword(t, h, member, "member-password")
 	if err = s.ensureSingleAdmin(); err != nil {
 		t.Fatal(err)
 	}

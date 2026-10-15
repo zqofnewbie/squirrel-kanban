@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -21,7 +22,15 @@ func pathID(r *http.Request, name string) int64 {
 
 func decode(r *http.Request, v any) error {
 	defer r.Body.Close()
-	return json.NewDecoder(io.LimitReader(r.Body, 4<<20)).Decode(v)
+	decoder := json.NewDecoder(io.LimitReader(r.Body, 4<<20))
+	if err := decoder.Decode(v); err != nil {
+		return err
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		return errors.New("expected one JSON value")
+	}
+	return nil
 }
 
 func timeTicker() *time.Ticker { return time.NewTicker(25 * time.Second) }

@@ -11,8 +11,22 @@ export interface User {
   session_count?: number
 }
 
-export interface Workspace { created_at: string; creator_name: string; owner_id: number; can_manage: boolean; id: number; name: string; description: string; board_count: number }
-export interface ManagedUser extends User { workspace_ids: number[]; owned_workspace_ids: number[]; manager_id: number; manager_name: string }
+export interface Workspace {
+  created_at: string
+  creator_name: string
+  owner_id: number
+  can_manage: boolean
+  id: number
+  name: string
+  description: string
+  board_count: number
+}
+export interface ManagedUser extends User {
+  workspace_ids: number[]
+  owned_workspace_ids: number[]
+  manager_id: number
+  manager_name: string
+}
 
 export interface Board {
   workspace_id: number

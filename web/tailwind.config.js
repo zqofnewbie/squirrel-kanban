@@ -20,7 +20,17 @@ export default {
         drawer: '-8px 0 32px rgba(16,24,40,0.10)',
       },
       fontFamily: {
-        sans: ['"Noto Sans SC"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"', 'Roboto', 'sans-serif'],
+        sans: [
+          '"Noto Sans SC"',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          '"PingFang SC"',
+          '"Hiragino Sans GB"',
+          '"Microsoft YaHei"',
+          'Roboto',
+          'sans-serif',
+        ],
       },
     },
   },

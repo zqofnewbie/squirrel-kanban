@@ -9,8 +9,11 @@ export function createViewportAnchor(element: Viewport) {
   return {
     track() {
       // Layout can clamp scroll before ResizeObserver has handled the new size.
-      if (size.width === element.clientWidth && size.height === element.clientHeight &&
-          (element.scrollLeft !== applied.left || element.scrollTop !== applied.top)) {
+      if (
+        size.width === element.clientWidth &&
+        size.height === element.clientHeight &&
+        (element.scrollLeft !== applied.left || element.scrollTop !== applied.top)
+      ) {
         position = { left: element.scrollLeft, top: element.scrollTop }
         applied = { ...position }
       }
@@ -18,7 +21,10 @@ export function createViewportAnchor(element: Viewport) {
     resize() {
       const next = { width: element.clientWidth, height: element.clientHeight }
       if (!next.width || !next.height) return
-      position = { left: position.left + (size.width - next.width) / 2, top: position.top + (size.height - next.height) / 2 }
+      position = {
+        left: position.left + (size.width - next.width) / 2,
+        top: position.top + (size.height - next.height) / 2,
+      }
       element.scrollLeft = position.left
       element.scrollTop = position.top
       size = next

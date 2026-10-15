@@ -9,16 +9,23 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.2'
+      - run: npm ci
+        working-directory: web
       - run: node --test scripts/dev.test.mjs
+        env:
+          DEV_SMOKE: '1'
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -30,10 +37,16 @@ jobs:
         with:
           go-version: '1.27.2'
           cache-dependency-path: server/go.sum
-      - run: npm ci && npm test && npm run build
+      - run: npm ci && npm run format:check && npm test && npm run build
         working-directory: web
       - run: go test ./... && go vet ./...
         working-directory: server
+      - run: go build -o ../../squirrel-test-server .
+        working-directory: server
+      - run: npm ci && npx playwright install --with-deps chromium && npm test
+        working-directory: tests/browser
+        env:
+          KANBAN_TEST_BINARY: ${{ github.workspace }}/../squirrel-test-server
       - name: Validate Compose and smoke-test image
         env:
           KANBAN_ADMIN_PASS: ci-only-initial-password
@@ -47,8 +60,27 @@ jobs:
           docker compose restart kanban
           docker compose up -d --wait --wait-timeout 120
           docker compose exec -T kanban sh -c 'test -s /data/kanban.db && test "$(cat /data/.ci-persistence)" = smoke'
+      - name: Real Office conversion (optional deployment profile)
+        env:
+          KANBAN_ADMIN_PASS: ci-only-initial-password
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.preview.yml up -d --wait --wait-timeout 180
+          docker compose -f docker-compose.yml -f docker-compose.preview.yml cp tests/fixtures/preview.doc preview:/tmp/preview-smoke.doc
+          docker compose -f docker-compose.yml -f docker-compose.preview.yml exec -T preview curl --fail --silent --show-error --max-time 90 --form files=@/tmp/preview-smoke.doc http://localhost:3000/forms/libreoffice/convert > /tmp/preview-smoke.pdf
+          test "$(head -c 5 /tmp/preview-smoke.pdf)" = '%PDF-'
+      - name: Release inventory
+        run: |
+          mkdir -p release-artifacts
+          npm --prefix web sbom --package-lock-only --sbom-format cyclonedx > release-artifacts/web-sbom.json
+          (cd server && go list -m all) > release-artifacts/go-modules.txt
+          docker image inspect squirrel-kanban:latest > release-artifacts/image.json
+          git rev-parse HEAD > release-artifacts/commit.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-verification
+          path: release-artifacts/
       - name: Cleanup test containers
         if: always()
         env:
           KANBAN_ADMIN_PASS: ci-only-initial-password
-        run: docker compose down -v
+        run: docker compose -f docker-compose.yml -f docker-compose.preview.yml down -v

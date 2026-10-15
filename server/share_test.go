@@ -126,6 +126,7 @@ func TestShareAccessPermissionsScopeAndRevocation(t *testing.T) {
 	os.WriteFile(filepath.Join(filesDir(data), "a.txt"), []byte("hello"), 0600)
 	srv := &Server{store: s, hub: NewHub(), dataDir: data}
 	handler := srv.routes()
+	finishInitialPassword(t, handler, ac, "admin")
 	if err := s.createStarterBoard(1); err != nil {
 		t.Fatal(err)
 	}
@@ -314,6 +315,7 @@ func TestShareManagementPreservesBoardAndRevokesVisitors(t *testing.T) {
 	session, _ := s.CreateSession(admin.ID, "test")
 	ac := &http.Cookie{Name: cookieName, Value: session.Token}
 	h := (&Server{store: s, hub: NewHub(), dataDir: t.TempDir()}).routes()
+	finishInitialPassword(t, h, ac, "admin")
 	if err := s.createStarterBoard(1); err != nil {
 		t.Fatal(err)
 	}
@@ -383,6 +385,7 @@ func TestFixedSharesAreIndependentAndShort(t *testing.T) {
 	ss, _ := s.CreateSession(admin.ID, "test")
 	ac := &http.Cookie{Name: cookieName, Value: ss.Token}
 	h := (&Server{store: s, hub: NewHub(), dataDir: t.TempDir()}).routes()
+	finishInitialPassword(t, h, ac, "admin")
 	if err := s.createStarterBoard(1); err != nil {
 		t.Fatal(err)
 	}

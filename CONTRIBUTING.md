@@ -24,4 +24,15 @@ PR 描述写明问题、改动和验证结果。禁止提交真实账号、分�
 
 Docker 修改需执行两套 Compose 配置校验、构建、健康检查以及重启后数据保留测试。CI 使用独立临时数据卷；不要对真实部署执行 CI 的清理命令。
 
-发布前必须由项目所有者确定 LICENSE，并确认字体、图标、图片等第三方资产的授权和声明。没有 LICENSE 时，不应宣称仓库已经完成开源授权。
+本项目采用 MIT。新增第三方资产需保留其许可及来源；不要将第三方许可改成 MIT。
+
+## Formatting and optional browser tests
+
+Run `npm run format:check` in `web`; use `npm run format` before submitting changes.
+Browser tests are optional development tools in `tests/browser`, never runtime
+or normal dev-start dependencies. See [release checklist](docs/release-checklist.md).
+Keep browser fixtures disposable. Do not point smoke tests at existing deployments.
+
+Gitee hosts the source repository. `.github/workflows/ci.yml` runs only on GitHub
+mirrors; Gitee users should execute the same release checks in their configured CI.
+The workflow includes native startup smoke tests on Linux, macOS and Windows.

@@ -1,0 +1,7 @@
+{
+  "name": "squirrel-kanban-browser-smoke",
+  "private": true,
+  "license": "MIT",
+  "scripts": { "test": "node smoke.cjs" },
+  "devDependencies": { "playwright": "1.58.2" }
+}

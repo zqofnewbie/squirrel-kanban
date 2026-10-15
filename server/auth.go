@@ -29,6 +29,10 @@ func (s *Server) withAuth(next http.HandlerFunc) http.HandlerFunc {
 			writeErr(w, http.StatusUnauthorized, mapErr(err))
 			return
 		}
+		if u.MustChange && r.URL.Path != "/api/auth/me" && r.URL.Path != "/api/auth/password" {
+			writeErr(w, http.StatusForbidden, "请先修改初始密码")
+			return
+		}
 		if !s.allowResource(r, u) {
 			writeErr(w, http.StatusForbidden, "没有这个工作空间的访问权限")
 			return

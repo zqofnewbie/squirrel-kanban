@@ -13,15 +13,27 @@ export function useCanvasFullscreen() {
   async function exit() {
     update(false)
     if (state.current.native && document.fullscreenElement === document.documentElement) {
-      try { await document.exitFullscreen() } catch { if (state.current.mounted && document.fullscreenElement) update(true) }
+      try {
+        await document.exitFullscreen()
+      } catch {
+        if (state.current.mounted && document.fullscreenElement) update(true)
+      }
     }
   }
   async function toggle() {
     const current = state.current
-    if (current.active) { await exit(); return }
+    if (current.active) {
+      await exit()
+      return
+    }
     if (current.pending) return
     update(true)
-    if (!document.fullscreenEnabled || !document.documentElement.requestFullscreen || document.fullscreenElement) return
+    if (
+      !document.fullscreenEnabled ||
+      !document.documentElement.requestFullscreen ||
+      document.fullscreenElement
+    )
+      return
     current.pending = true
     try {
       await document.documentElement.requestFullscreen()
@@ -30,14 +42,20 @@ export function useCanvasFullscreen() {
       if ((!current.mounted || !current.active) && current.native) await document.exitFullscreen()
     } catch {
       // Unsupported/denied native fullscreen keeps the in-page canvas mode.
-    } finally { current.pending = false }
+    } finally {
+      current.pending = false
+    }
   }
   useEffect(() => {
     const current = state.current
     current.mounted = true
     const changed = () => {
-      if (document.fullscreenElement === document.documentElement && current.pending) current.native = true
-      if (current.native && document.fullscreenElement !== document.documentElement) { current.native = false; update(false) }
+      if (document.fullscreenElement === document.documentElement && current.pending)
+        current.native = true
+      if (current.native && document.fullscreenElement !== document.documentElement) {
+        current.native = false
+        update(false)
+      }
     }
     document.addEventListener('fullscreenchange', changed)
     return () => {
@@ -45,7 +63,8 @@ export function useCanvasFullscreen() {
       current.active = false
       document.documentElement.classList.remove('canvas-fullscreen')
       document.removeEventListener('fullscreenchange', changed)
-      if (current.native && document.fullscreenElement === document.documentElement) void document.exitFullscreen().catch(() => {})
+      if (current.native && document.fullscreenElement === document.documentElement)
+        void document.exitFullscreen().catch(() => {})
     }
   }, [])
   return { active, toggle, exit }

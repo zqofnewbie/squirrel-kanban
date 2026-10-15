@@ -433,3 +433,23 @@ func (s *Store) validateBootstrap(dev bool) error {
 	}
 	return nil
 }
+
+// ChangeOwnPassword preserves this session and atomically revokes every other session.
+func (s *Store) ChangeOwnPassword(id int64, password, token string) error {
+	hash, err := hashPassword(password)
+	if err != nil {
+		return err
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err = tx.Exec("UPDATE users SET password_hash=?, must_change=0 WHERE id=?", hash, id); err != nil {
+		return err
+	}
+	if _, err = tx.Exec("DELETE FROM sessions WHERE user_id=? AND token<>?", id, token); err != nil {
+		return err
+	}
+	return tx.Commit()
+}

@@ -6,6 +6,9 @@
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
+| `KANBAN_PORT` | `8080` | Host port, bound to all IPv4 interfaces by default |
+| `KANBAN_VOLUME` | `squirrel-kanban-data` | Persistent Docker named volume; use a distinct name per instance |
+| `KANBAN_GOPROXY` | `https://proxy.golang.org,direct` | Build-time Go module proxy |
 | `KANBAN_ADDR` | `:8080` | API / static server address |
 | `KANBAN_DATA` | `./data` (`/data` in Compose) | SQLite, attachments, backgrounds and preview cache |
 | `KANBAN_ADMIN_USER` | `admin` | Initial super administrator; does not replace an existing account |
@@ -41,31 +44,55 @@ If backup fails, retain the original data and restart the service. Never copy on
 
 Back up existing data first. Restore into an empty volume.
 
+恢复使用一个**全新的卷名**，保留原卷以便回滚。下面的检查会拒绝向非空卷解压。
+Restore to a **new volume** and keep the original for rollback. The guard refuses
+non-empty destinations. Replace the example name and backup file explicitly.
+
 ```sh
-docker compose down
-docker volume create squirrel-kanban-data
+docker compose stop kanban
+docker volume create squirrel-kanban-restore-20261015
 docker run --rm -i -u 0 --entrypoint sh \
-  -v squirrel-kanban-data:/data alpine:3.24.2 \
-  -c 'tar -xzf - -C /data && chown -R 10001:10001 /data' < backups/YOUR-BACKUP.tar.gz
-docker compose up -d --build --wait
+  -v squirrel-kanban-restore-20261015:/data alpine:3.24.2 \
+  -c 'test -z "$(ls -A /data)" || exit 1; tar -xzf - -C /data && chown -R 10001:10001 /data' < backups/YOUR-BACKUP.tar.gz
 ```
+
+只有上一步成功后，将 `.env` 中 `KANBAN_VOLUME` 改为新卷名，再执行：
+Only after successful extraction, set `KANBAN_VOLUME` in `.env` to the new name:
+
+```sh
+docker compose config -q
+docker compose up -d --wait
+docker compose logs --tail=100 kanban
+```
+
+登录检查看板、附件及分享链接。失败时停止服务，将 `.env` 的卷名恢复为旧值，
+再执行 `docker compose up -d --wait`。不要删除原卷直到验证完成。
+Verify boards, attachments and sharing links. To roll back, stop the service,
+restore the old volume name and recreate the container. Retain both volumes.
 
 ## 旧目录迁移 / Migrate an existing bind mount
 
-旧的 `./data:/data` 不会自动迁移。停止旧服务并备份后复制整个目录到空命名卷。
-
-An old `./data:/data` bind mount is not migrated automatically. Stop and back up the old deployment, then copy all files into an empty named volume.
+停止旧服务并备份整个目录。创建全新卷，复制前确认目标为空，然后将 `.env`
+中的 `KANBAN_VOLUME` 指向新卷。不要直接复用可能已有数据的默认卷。
+Stop the old service and back up its whole data directory. Copy into a fresh,
+empty named volume and select it through `KANBAN_VOLUME`.
 
 ```sh
-docker compose down
-mkdir -p backups
-cp -R data backups/data-before-migration
-docker volume create squirrel-kanban-data
+docker volume create squirrel-kanban-migrated-20261015
 docker run --rm -u 0 --entrypoint sh \
-  -v "$PWD/data:/old:ro" -v squirrel-kanban-data:/data \
-  alpine:3.24.2 -c 'cp -a /old/. /data/ && chown -R 10001:10001 /data'
-docker compose up -d --build --wait
+  -v "$PWD/data:/old:ro" -v squirrel-kanban-migrated-20261015:/data \
+  alpine:3.24.2 -c 'test -z "$(ls -A /data)" || exit 1; cp -a /old/. /data/ && chown -R 10001:10001 /data'
 ```
+
+查看卷所在主机路径 / Locate the host volume:
+
+```sh
+docker volume inspect squirrel-kanban-data --format '{{ .Mountpoint }}'
+```
+
+Linux 上通常位于 Docker 数据目录的 `volumes/.../_data`；Docker Desktop
+返回的是虚拟机内部路径。备份应通过容器读取卷，不依赖主机路径。
+On Docker Desktop the mountpoint is inside its VM; use a container for backups.
 
 ## 运行边界 / Operational boundaries
 

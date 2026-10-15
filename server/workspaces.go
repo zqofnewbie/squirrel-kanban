@@ -126,7 +126,7 @@ func (s *Server) allowResource(r *http.Request, u *AuthUser) bool {
 	if path == "/api/users" || strings.HasPrefix(path, "/api/users/") {
 		return u.Role == "workspace_admin"
 	}
-	if strings.HasPrefix(path, "/api/auth/") || path == "/api/workspaces" || path == "/api/boards" || path == "/api/shares" {
+	if strings.HasPrefix(path, "/api/auth/") || path == "/api/workspaces" || path == "/api/boards" || path == "/api/board-order" || path == "/api/shares" {
 		return true
 	}
 	if path == "/api/events" {

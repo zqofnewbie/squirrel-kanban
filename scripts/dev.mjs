@@ -106,7 +106,7 @@ export async function main() {
     if (Number(process.versions.node.split('.')[0]) < 22) throw new Error('请安装 Node.js 22+。')
     const config = readConfig(process.env, root)
     const go = await executable('go')
-    if (!go) throw new Error('请安装 Go 1.24+ 并加入 PATH。')
+    if (!go) throw new Error('请安装 Go 1.26+ 并加入 PATH。')
     if (!await executable('npm')) throw new Error('请安装 npm 并加入 PATH。')
     for (const port of [config.apiPort, config.webPort]) {
       if (await portOpen(port)) throw new Error(`端口 ${port} 已占用，请通过 API_PORT / WEB_PORT 换端口。`)

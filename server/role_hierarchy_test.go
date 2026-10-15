@@ -16,7 +16,12 @@ func TestRoleHierarchyAndCollaborationFlow(t *testing.T) {
 	h := (&Server{store: s, hub: NewHub(), dataDir: t.TempDir()}).routes()
 	login := func(id int64) *http.Cookie {
 		session, _ := s.CreateSession(id, "")
-		return &http.Cookie{Name: cookieName, Value: session.Token}
+		cookie := &http.Cookie{Name: cookieName, Value: session.Token}
+		user, _ := s.GetUser(id)
+		if user.MustChange {
+			finishInitialPassword(t, h, cookie, "test-password")
+		}
+		return cookie
 	}
 	root := login(1)
 	create := func(cookie *http.Cookie, name, role string, spaces string) int64 {

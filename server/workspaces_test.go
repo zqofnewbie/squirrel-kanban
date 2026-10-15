@@ -40,6 +40,7 @@ func TestWorkspaceAuthorizationAndMembershipLifecycle(t *testing.T) {
 	}
 	sess, _ := s.CreateSession(uid, "")
 	cookie := &http.Cookie{Name: cookieName, Value: sess.Token}
+	finishInitialPassword(t, h, cookie, "delegate-password")
 	// Restart migration must preserve newly authorized users and their assignments.
 	if err = s.ensureSeed(); err != nil {
 		t.Fatal(err)
@@ -312,6 +313,7 @@ func TestFreshInstallAndEnglishBoardDefaults(t *testing.T) {
 	}
 	session, _ := s.CreateSession(user.ID, "")
 	h := (&Server{store: s, hub: NewHub(), dataDir: t.TempDir()}).routes()
+	finishInitialPassword(t, h, &http.Cookie{Name: cookieName, Value: session.Token}, "fresh-password")
 	r := httptest.NewRequest("POST", "/api/boards", strings.NewReader(`{"name":"English board"}`))
 	r.Header.Set("Content-Type", "application/json")
 	r.Header.Set("Accept-Language", "en-US")

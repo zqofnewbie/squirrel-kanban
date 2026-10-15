@@ -26,7 +26,7 @@ Screenshots use freshly initialized starter templates, with no personal boards o
 
 ## Local development
 
-Requirements: **Go 1.24+, Node.js 22+ and npm**. Prefer a supported Go release. Use the committed `package-lock.json`; do not mix package managers.
+Requirements: **Go 1.26+, Node.js 22.12+ and npm**. Prefer a supported Go release. Use the committed `package-lock.json`; do not mix package managers.
 
 ```sh
 git clone https://gitee.com/storm07106038/squirrel-kanban.git
@@ -168,6 +168,18 @@ Git and Docker exclude runtime data, backups, credentials, dependencies, build o
 
 `.github/workflows/ci.yml` provides GitHub Actions verification and container smoke tests. The current origin is Gitee: enable the workflow on a GitHub mirror or adapt it for Gitee CI. Real container builds and Office preview tests still require a running Docker engine. Known development-tool vulnerabilities and release blockers are recorded in the deployment review.
 
-## License
+## License and contribution
 
-No project license has been selected yet; no open-source grant for commercial use, modification or redistribution is currently declared. Third-party font terms are in [OFL.txt](web/public/fonts/OFL.txt) and [SOURCE.md](web/public/fonts/SOURCE.md). Complete asset attribution and Git-history review before public release.
+Squirrel Kanban uses the [MIT License](LICENSE), allowing commercial use,
+modification and redistribution while retaining the copyright and license notice.
+Dependencies and fonts retain their own licenses; see [third-party notices](THIRD_PARTY_NOTICES.md).
+
+- [Contributing](CONTRIBUTING.md): development, tests and submission conventions.
+- [Security](SECURITY.md): authentication, public deployment and reporting.
+- [Deployment and recovery](docs/deployment.md): ports, volumes, upgrades and rollback.
+- [Release checklist](docs/release-checklist.md): repeatable regression checks and environment limits.
+
+The API requires changing the initial password. Changing a password revokes other
+sessions. Card titles allow 250 Unicode characters and descriptions 20000, with
+identical validation for signed-in users and shared editors. Shared editors are
+warned before discarding unsaved changes.

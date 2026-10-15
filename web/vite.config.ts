@@ -10,6 +10,7 @@ export default defineConfig({
   build: {
     outDir: '../server/static',
     emptyOutDir: true,
+    rollupOptions: { output: { manualChunks: { react: ['react', 'react-dom'] } } },
   },
   server: {
     // 固定绑 IPv4：localhost 与 127.0.0.1 在浏览器里是两个不同的 cookie 域，

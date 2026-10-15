@@ -14,7 +14,14 @@ func (s *Server) handleCreateCard(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Title string `json:"title"`
 	}
-	_ = decode(r, &req)
+	if decode(r, &req) != nil {
+		writeErr(w, 400, "请求格式不正确")
+		return
+	}
+	if err := validateCardFields(&req.Title, nil, nil, nil); err != nil {
+		writeErr(w, 400, err.Error())
+		return
+	}
 	c, err := s.store.CreateCard(columnID, strings.TrimSpace(req.Title), u.ID)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "创建卡片失败")
@@ -50,8 +57,8 @@ func (s *Server) handleUpdateCard(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, "请求格式不正确")
 		return
 	}
-	if req.Title != nil && strings.TrimSpace(*req.Title) == "" {
-		writeErr(w, http.StatusBadRequest, "标题不能为空")
+	if err := validateCardFields(req.Title, req.Description, req.DueDate, req.Cover); err != nil {
+		writeErr(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	c, err := s.store.UpdateCard(id, CardPatch{

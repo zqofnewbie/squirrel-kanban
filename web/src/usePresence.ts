@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react'
 export function usePresence(open: boolean) {
   const [retained, setRetained] = useState(open)
   useEffect(() => {
-    if (open) { setRetained(true); return }
+    if (open) {
+      setRetained(true)
+      return
+    }
     const timer = window.setTimeout(() => setRetained(false), 180)
     return () => window.clearTimeout(timer)
   }, [open])
