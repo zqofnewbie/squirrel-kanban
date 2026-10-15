@@ -16,8 +16,6 @@ export default function ColumnScrollFooter({
     const el = target.current
     if (!el) return
     const update = () => {
-      const scrollbarWidth = el.offsetWidth - el.clientWidth
-      el.style.setProperty('--column-scrollbar-width', `${scrollbarWidth}px`)
       const max = el.scrollHeight - el.clientHeight
       const next = {
         scrollable: max > el.clientHeight * SCROLL_THRESHOLD_RATIO,

@@ -279,7 +279,7 @@ export function MenuItem({
       onClick={onClick}
       role="menuitem"
       className={classes(
-        'flex min-h-9 items-center gap-2 w-full rounded-lg px-3 py-2 text-left text-[13px] leading-5 [&>svg]:shrink-0 [&>svg]:h-4 [&>svg]:w-4',
+        'flex min-h-8 items-center gap-2 w-full rounded-lg px-2.5 py-1.5 text-left text-[13px] leading-5 [&_svg]:shrink-0 [&_svg]:h-[15px] [&_svg]:w-[15px]',
         danger
           ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40'
           : 'hover:bg-black/[0.05] dark:hover:bg-white/[0.08]',

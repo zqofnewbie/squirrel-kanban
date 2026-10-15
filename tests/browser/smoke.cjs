@@ -1,6 +1,8 @@
 // Optional browser regression: starts its own server and disposable data directory.
 // Never accepts a production URL or touches development data.
 const motion = require("./layer-motion.cjs");
+const sizing = require("./control-sizing.cjs");
+const scrollStability = require("./scroll-stability.cjs");
 const { chromium, request } = require("playwright");
 const assert = require("node:assert/strict");
 const { spawn } = require("node:child_process");
@@ -205,9 +207,35 @@ async function main() {
           );
           await page.goto(base + (link ? "/s/" + link : "/"));
           await page.locator(".card-tile").first().waitFor();
+          if (
+            ["admin", "share", "readonly"].includes(role) &&
+            language === "zh" &&
+            theme === "light"
+          )
+            await scrollStability(page);
+          await sizing.overview(page, !!link);
+          if (api) await sizing.navigationMenus(page);
+          if (process.env.KANBAN_UI_SNAPSHOT_DIR && role === "admin") {
+            await page.screenshot({
+              path: path.join(
+                process.env.KANBAN_UI_SNAPSHOT_DIR,
+                `overview-${language}-${theme}.png`,
+              ),
+            });
+          }
           await page.locator(".card-more").first().hover();
           const menu = page.getByRole("menu");
           await menu.waitFor();
+          await sizing.menu(menu);
+          if (process.env.KANBAN_UI_SNAPSHOT_DIR && role === "admin") {
+            await sleep(200);
+            await page.screenshot({
+              path: path.join(
+                process.env.KANBAN_UI_SNAPSHOT_DIR,
+                `menu-${language}-${theme}.png`,
+              ),
+            });
+          }
           const text = await menu.innerText();
           assert.equal(/删除卡片|Delete card/.test(text), !link);
           assert.equal(/编辑标题|Edit title/.test(text), role !== "readonly");
@@ -233,6 +261,15 @@ async function main() {
           await page.locator(".card-tile").first().click();
           await page.getByRole("dialog").waitFor();
           await sleep(220);
+          await sizing.drawer(page.getByRole("dialog"));
+          if (process.env.KANBAN_UI_SNAPSHOT_DIR && role === "admin") {
+            await page.screenshot({
+              path: path.join(
+                process.env.KANBAN_UI_SNAPSHOT_DIR,
+                `drawer-${language}-${theme}.png`,
+              ),
+            });
+          }
           await motion.arm(page.getByRole("dialog"));
           await page.keyboard.press("Escape");
           await motion.check(page, true);

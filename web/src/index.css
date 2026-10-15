@@ -33,11 +33,15 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-input,
-textarea,
-select,
-button {
-  font: inherit;
+/* Keep resets below component utilities: unlayered font: inherit overrides
+   Tailwind v4 font-size, font-weight and line-height on every form control. */
+@layer base {
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+  }
 }
 
 .scroll-thin {
@@ -3639,11 +3643,14 @@ html[lang='en-US'] .sidebar-search > span {
 }
 .column-cards,
 .shared-card-scroll.column-cards {
-  scrollbar-gutter: auto;
+  /* Reserve the scrollbar gutter even at the overflow boundary. Measuring the
+     current scrollbar and feeding it back into padding makes wrapped cards
+     alternate between overflowing and fitting at fractional canvas zoom. */
+  scrollbar-gutter: stable;
   padding-left: 2px;
-  padding-right: max(0px, calc(12px - var(--column-scrollbar-width, 0px)));
+  padding-right: 8px;
   margin-left: -2px;
-  margin-right: calc(-1 * max(12px, var(--column-scrollbar-width, 0px)));
+  margin-right: -12px;
 }
 .column-scroll-footer {
   flex-shrink: 0;
@@ -3841,6 +3848,14 @@ html[lang='en-US'] .sidebar-search > span {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.board-toolbar-actions > button {
+  height: 32px;
+  padding-inline: 10px;
+}
+.board-toolbar-actions > button > .ui-icon {
+  width: 15px;
+  height: 15px;
 }
 .board-toolbar-actions {
   width: auto;
