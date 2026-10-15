@@ -14,7 +14,7 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Card } from './types'
-import { cx, dueState, formatDate, Progress } from './ui'
+import { cx, dueState, formatDate, Progress, Menu, MenuItem } from './ui'
 
 interface Props {
   card: Card
@@ -167,9 +167,14 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
       ) : (
         <div className="card-title-row">
           <div className="card-title break-words text-[13px] leading-[1.55]">{card.title}</div>
-          {(canPin || canEdit) && <div className="card-actions" aria-hidden={overlay || undefined}>
-            {!overlay && canPin && <button className={`card-pin ${card.pinned ? 'is-pinned' : ''}`} aria-label={t(card.pinned ? "取消固定" : "固定到列表顶部")} title={t(card.pinned ? "取消固定" : "固定到列表顶部")} aria-pressed={!!card.pinned} disabled={pinBusy} onPointerDown={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); void togglePin() }}><Icon name="pin" size={14} /></button>}
-            {!overlay && canEdit && <button className="card-edit" aria-label={t("编辑标题：{0}", [card.title])} title={t("编辑标题")} onPointerDown={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()} onClick={e => { e.stopPropagation(); startEdit() }}><Icon name="edit" size={15} /></button>}
+          {(canPin || canEdit) && <div className="card-actions" aria-hidden={overlay || undefined} onPointerDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
+            {!overlay && <Menu openOnHover width={210} trigger={(open, toggle) => <button type="button" className="card-more" aria-label={t("卡片操作")} onClick={toggle}><span style={{ display:'flex', transform:'rotate(90deg)' }}><Icon name="more" size={16} /></span></button>}>
+              {close => <>
+                {canPin && <MenuItem onClick={() => { close(); if (!pinBusy) void togglePin() }}><Icon name="pin" size={14} />{t(card.pinned ? "取消固定" : "固定到列表顶部")}</MenuItem>}
+                {canEdit && <MenuItem onClick={() => { close(); startEdit() }}><Icon name="edit" size={15} />{t("编辑标题")}</MenuItem>}
+              </>}
+            </Menu>}
+
           </div>}
         </div>
       )}

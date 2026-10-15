@@ -917,8 +917,13 @@ html.canvas-fullscreen, .canvas-fullscreen body, .canvas-fullscreen #root { heig
 /* Reserve an action rail so hovering never changes title wrapping. */
 .card-title-row { display:flex; align-items:flex-start; gap:8px; }
 .card-title-row > .card-title { flex:1; }
-.card-actions { display:flex; gap:2px; flex:0 0 50px; min-height:24px; justify-content:flex-end; }
+.card-actions { display:flex; gap:2px; flex:0 0 24px; min-height:24px; justify-content:flex-end; }
 .card-actions .card-pin, .card-actions .card-edit { position:static; display:grid; place-items:center; flex:0 0 24px; width:24px; height:24px; background:transparent; transition:opacity .15s; }
 .card-actions .card-pin:hover, .card-actions .card-edit:hover { color:var(--accent); background:var(--surface-hover); }
 .card-tile:focus-within .card-pin { opacity:1; }
 @media (hover:none) { .card-actions .card-edit { opacity:1; } }
+
+.card-more { display:grid; place-items:center; width:24px; height:24px; border-radius:7px; color:var(--muted); background:var(--surface-hover); opacity:0; transition:opacity .15s; }
+.card-tile:hover .card-more, .card-tile:focus-within .card-more, .card-more[aria-expanded="true"] { opacity:1; }
+.card-more:hover { color:var(--accent); }
+@media (hover:none) { .card-more { opacity:1; } }

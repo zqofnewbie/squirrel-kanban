@@ -316,13 +316,14 @@ export function Modal({
 
 // ---------- 下拉菜单 ----------
 
-export function Menu({ trigger, children, align = 'right', width = 200, matchTriggerWidth = false, className }: {
+export function Menu({ trigger, children, align = 'right', width = 200, matchTriggerWidth = false, className, openOnHover = false }: {
   className?: string
   trigger: (open: boolean, toggle: () => void) => React.ReactNode
   children: (close: () => void) => React.ReactNode
   align?: 'left' | 'right'
   width?: number
   matchTriggerWidth?: boolean
+  openOnHover?: boolean
 }) {
   useLanguage()
   const [open, setOpen] = useState(false)
@@ -331,6 +332,12 @@ export function Menu({ trigger, children, align = 'right', width = 200, matchTri
   const box = useRef<HTMLDivElement>(null)
   const menu = useRef<HTMLDivElement>(null)
   const id = useId()
+  const hoverOpened = useRef(false)
+  const hoverTimer = useRef<ReturnType<typeof setTimeout>>()
+  const clearHover = () => { clearTimeout(hoverTimer.current) }
+  useEffect(() => () => clearTimeout(hoverTimer.current), [])
+  const hoverEnter = () => { clearHover(); if (openOnHover && !open) { hoverOpened.current = true; setOpen(true) } }
+  const hoverLeave = () => { if (openOnHover && hoverOpened.current) hoverTimer.current = setTimeout(() => setOpen(false), 180) }
   const focusLast = useRef(false)
   const focusTrigger = (visible = keyboardFocus()) => focusElement(box.current?.querySelector<HTMLButtonElement>('button'), visible)
   const close = () => { const visible = keyboardFocus(); setOpen(false); focusTrigger(visible); requestAnimationFrame(() => { if (document.activeElement === document.body) focusTrigger(visible) }) }
@@ -369,21 +376,21 @@ export function Menu({ trigger, children, align = 'right', width = 200, matchTri
     return () => { document.removeEventListener('pointerdown', onDown); window.removeEventListener('keydown', onKey, true); window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true) }
   }, [open, align, width, matchTriggerWidth])
   useEffect(() => {
-    if (!open || !position.ready) return
+    if (!open || !position.ready || hoverOpened.current) return
     const input = menu.current?.querySelector<HTMLInputElement>('input, textarea')
     const items = Array.from(menu.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)') ?? [])
     focusElement(input ?? (focusLast.current ? items[items.length - 1] : items[0]))
   }, [open, position.ready])
-  const control = trigger(open, () => { focusLast.current = false; setOpen(v => !v) })
-  return <div className={cx("relative inline-flex min-w-0", className)} ref={box}>
+  const control = trigger(open, () => { clearHover(); focusLast.current = false; if (hoverOpened.current) { hoverOpened.current = false; setOpen(true) } else setOpen(v => !v) })
+  return <div className={cx("relative inline-flex min-w-0", className)} ref={box} onMouseEnter={openOnHover ? hoverEnter : undefined} onMouseLeave={openOnHover ? hoverLeave : undefined}>
     {React.isValidElement(control) ? React.cloneElement(control as React.ReactElement<any>, {
       id, 'aria-haspopup': 'menu', 'aria-expanded': open,
       onKeyDown: (e: React.KeyboardEvent) => {
-        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); focusLast.current = e.key === 'ArrowUp'; setOpen(true) }
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); hoverOpened.current = false; focusLast.current = e.key === 'ArrowUp'; setOpen(true) }
         else (control.props as any).onKeyDown?.(e)
       },
     }) : control}
-    {presence.mounted && createPortal(<div data-motion={presence.phase} aria-hidden={!open || undefined} {...(!open ? { inert: '' } : {})} ref={menu} role="menu" aria-labelledby={id} className="motion-panel menu-panel scroll-thin pop fixed z-[90] overflow-y-auto rounded-xl border border-[var(--line)] bg-[var(--surface)] p-1.5 shadow-lift" style={{ left: position.left, top: position.top, width: position.width, maxHeight: 'calc(100dvh - 16px)', visibility: position.ready ? 'visible' : 'hidden' }}>{children(close)}</div>, document.body)}
+    {presence.mounted && createPortal(<div data-motion={presence.phase} aria-hidden={!open || undefined} {...(!open ? { inert: '' } : {})} ref={menu} onMouseEnter={openOnHover ? clearHover : undefined} onMouseLeave={openOnHover ? hoverLeave : undefined} role="menu" aria-labelledby={id} className="motion-panel menu-panel scroll-thin pop fixed z-[90] overflow-y-auto rounded-xl border border-[var(--line)] bg-[var(--surface)] p-1.5 shadow-lift" style={{ left: position.left, top: position.top, width: position.width, maxHeight: 'calc(100dvh - 16px)', visibility: position.ready ? 'visible' : 'hidden' }}>{children(close)}</div>, document.body)}
   </div>
 }
 

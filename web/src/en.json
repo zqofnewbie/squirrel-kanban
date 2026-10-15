@@ -709,5 +709,6 @@
   "截图": "Screenshot",
   "正在截图…": "Capturing…",
   "画布截图已下载": "Canvas screenshot downloaded",
-  "截图失败，请重试": "Screenshot failed. Please try again."
+  "截图失败，请重试": "Screenshot failed. Please try again.",
+  "卡片操作": "Card actions"
 }
