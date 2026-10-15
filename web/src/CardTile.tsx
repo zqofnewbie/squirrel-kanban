@@ -180,13 +180,13 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
           {<div className="card-actions" aria-hidden={overlay || undefined} onPointerDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
             {!overlay && <Menu openOnHover placement="right-start" width={210} trigger={(open, toggle) => <button type="button" className="card-more" disabled={actionBusy || pinBusy} aria-label={t("卡片操作")} onClick={toggle}><span style={{ display:'flex', transform:'rotate(90deg)' }}><Icon name="more" size={16} /></span></button>}>
               {close => <>
-                {canPin && <MenuItem onClick={() => { close(); if (!pinBusy) void togglePin() }}><Icon name="pin" size={14} />{t(card.pinned ? "取消固定" : "固定到列表顶部")}</MenuItem>}
-                {canEdit && <MenuItem onClick={() => { close(); startEdit() }}><Icon name="edit" size={15} />{t("编辑标题")}</MenuItem>}
-                <MenuItem onClick={() => { close(); onOpen(card.id) }}>{t("卡片详情")}</MenuItem>
-                {canMove && <MenuItem onClick={() => { close(); setColumns(moveColumns ?? useStore.getState().board?.columns ?? []); setMoveOpen(true) }}>{t("移动卡片")}</MenuItem>}
-                <MenuItem onClick={() => { close(); onOpen(card.id, 'comments') }}>{t("评论")}</MenuItem>
-                {!!card.attachment_count && <MenuItem onClick={() => { close(); onOpen(card.id, 'attachments') }}>{t("附件")}</MenuItem>}
-                {!shareId && <><MenuSep /><MenuItem onClick={() => { close(); void runAction(async () => { useStore.getState().updateCardLocal(await api.updateCard(card.id, {archived:true})) }) }}>{t("归档")}</MenuItem><MenuItem danger onClick={() => { close(); setDeleteOpen(true) }}>{t("删除卡片")}</MenuItem></>}
+                {canPin && <MenuItem onClick={() => { close(); if (!pinBusy) void togglePin() }}><Icon name="pin" size={16} />{t(card.pinned ? "取消固定" : "固定到列表顶部")}</MenuItem>}
+                {canEdit && <MenuItem onClick={() => { close(); startEdit() }}><Icon name="edit" size={16} />{t("编辑标题")}</MenuItem>}
+                <MenuItem onClick={() => { close(); onOpen(card.id) }}><Icon name="description" size={16} />{t("卡片详情")}</MenuItem>
+                {canMove && <MenuItem onClick={() => { close(); setColumns(moveColumns ?? useStore.getState().board?.columns ?? []); setMoveOpen(true) }}><Icon name="external" size={16} />{t("移动卡片")}</MenuItem>}
+                <MenuItem onClick={() => { close(); onOpen(card.id, 'comments') }}><Icon name="comment" size={16} />{t("评论")}</MenuItem>
+                {!!card.attachment_count && <MenuItem onClick={() => { close(); onOpen(card.id, 'attachments') }}><Icon name="attachment" size={16} />{t("附件")}</MenuItem>}
+                {!shareId && <><MenuSep /><MenuItem onClick={() => { close(); void runAction(async () => { useStore.getState().updateCardLocal(await api.updateCard(card.id, {archived:true})) }) }}><Icon name="archive" size={16} />{t("归档")}</MenuItem><MenuItem danger onClick={() => { close(); setDeleteOpen(true) }}><Icon name="trash" size={16} />{t("删除卡片")}</MenuItem></>}
               </>}
             </Menu>}
 
