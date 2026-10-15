@@ -189,7 +189,9 @@ export default function ColumnView({
           {col.wip_limit > 0 ? ` / ${col.wip_limit}` : ''}
         </span>
         <Menu
-          width={180}
+          openOnHover
+          placement="right-start"
+          width={210}
           trigger={(_, toggle) => (
             <button
               onClick={toggle}
