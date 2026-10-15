@@ -2,6 +2,16 @@
 
 目标：保持轻量，优先修复交互和正确性；新增依赖或后台服务需要解释必要性。
 
+## 反馈与贡献入口 / Where to contribute
+
+- [GitHub Issues](https://github.com/zqofnewbie/squirrel-kanban/issues)：缺陷、功能建议和使用问题。
+- [GitHub Pull Requests](https://github.com/zqofnewbie/squirrel-kanban/pulls)：Fork GitHub 仓库，从功能分支向 `master` 提交 PR。
+- Gitee 是国内代码同步仓库，不单独维护开发分支；请勿两边重复提交问题或 PR。
+- 安全漏洞请使用 [GitHub 私密报告](https://github.com/zqofnewbie/squirrel-kanban/security/advisories/new)，不要公开漏洞细节。
+
+Please file issues and submit pull requests on GitHub, targeting `master`.
+Gitee is a synchronized mirror. Use private vulnerability reporting for security issues.
+
 开发环境和启动步骤见 README（中文）或 README.en.md（English）。
 
 `dev.sh` / `dev.bat` 仅作为入口，共用 `scripts/dev.mjs`。修改启动逻辑后执行 `node --test scripts/dev.test.mjs`；安装 Go 和前端依赖后，以 `DEV_SMOKE=1 node --test scripts/dev.test.mjs` 实测独立端口 / 临时数据、API 代理和退出清理（PowerShell 使用 `$env:DEV_SMOKE="1"`）。Windows 的 Ctrl+C 需在原生终端验证，自动测试覆盖启动和进程树清理；CI 对三种操作系统运行轻量检查。
@@ -33,6 +43,23 @@ Browser tests are optional development tools in `tests/browser`, never runtime
 or normal dev-start dependencies. See [release checklist](docs/release-checklist.md).
 Keep browser fixtures disposable. Do not point smoke tests at existing deployments.
 
-Gitee hosts the source repository. `.github/workflows/ci.yml` runs only on GitHub
-mirrors; Gitee users should execute the same release checks in their configured CI.
+GitHub hosts issues, pull requests and `.github/workflows/ci.yml`. Gitee mirrors
+the same source history; contributors can run the release checks locally.
 The workflow includes native startup smoke tests on Linux, macOS and Windows.
+
+## 维护者同步 / Maintainer synchronization
+
+当前维护工作区保留 Gitee `origin` 和 GitHub `github` 两个独立远程，
+普通 `git push` 不会自动同步两边。合并 GitHub PR 后先拉取 `github/master`，
+再推送 Gitee；在本地提交时分别推送两个远程。不要使用 `--mirror` 或强制推送同步日常改动。
+
+```sh
+git switch master
+git pull --ff-only github master
+git push github master
+git push origin master
+```
+
+These remote names belong to the maintainer's checkout; a fresh clone may use
+`origin` for GitHub. Check `git remote -v` before running the commands.
+If either push fails, retry that remote after resolving the error and verify both tips.

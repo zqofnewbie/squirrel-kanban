@@ -2,7 +2,9 @@
 
 目前项目尚未发布稳定版本，安全修复以主分支为准。不要在公开 Issue 中提交密码、分享链接密钥、数据库、附件或可直接利用的漏洞细节。
 
-当前仓库位于 Gitee。请先提交不含漏洞细节的 Issue，向维护者请求私密联系方式。若后续启用 GitHub 镜像的 **Security → Report a vulnerability** 入口，可使用该私密报告渠道；维护者需先启用 Private vulnerability reporting。
+请通过 [GitHub 私密漏洞报告](https://github.com/zqofnewbie/squirrel-kanban/security/advisories/new)（**Security → Report a vulnerability**）联系维护者，此入口已启用。GitHub 和 Gitee 的公开 Issue 均不用于提交漏洞细节。
+
+Please use [GitHub private vulnerability reporting](https://github.com/zqofnewbie/squirrel-kanban/security/advisories/new) for security issues. Do not post exploit details or credentials in public issues on either platform.
 
 报告应包含受影响版本、最小复现步骤、影响范围和必要的脱敏日志。当前未承诺固定响应时限。
 

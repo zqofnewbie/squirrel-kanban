@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 私密漏洞报告 / Private security report
+    url: https://github.com/zqofnewbie/squirrel-kanban/security/advisories/new
+    about: 请勿公开漏洞细节或凭据 / Report vulnerabilities and credentials privately.

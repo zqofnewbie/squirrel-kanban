@@ -178,6 +178,8 @@ The repository is published on both GitHub and Gitee. `.github/workflows/ci.yml`
 
 ## License and contribution
 
+Please use GitHub for [issues and feature requests](https://github.com/zqofnewbie/squirrel-kanban/issues) and [pull requests](https://github.com/zqofnewbie/squirrel-kanban/pulls). Gitee is a synchronized mirror for users in China; avoid duplicate reports across platforms. Report security issues through [private vulnerability reporting](https://github.com/zqofnewbie/squirrel-kanban/security/advisories/new).
+
 Squirrel Kanban uses the [MIT License](LICENSE), allowing commercial use,
 modification and redistribution while retaining the copyright and license notice.
 Dependencies and fonts retain their own licenses; see [third-party notices](THIRD_PARTY_NOTICES.md).

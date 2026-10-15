@@ -178,6 +178,8 @@ Git 和 Docker 构建上下文排除运行数据、备份、凭据、依赖目�
 
 ## 开源许可与贡献
 
+反馈与贡献统一在 GitHub 处理：[提交问题或建议](https://github.com/zqofnewbie/squirrel-kanban/issues) · [提交 Pull Request](https://github.com/zqofnewbie/squirrel-kanban/pulls)。Gitee 作为国内代码同步仓库，请勿两边重复提交。安全问题请使用[私密漏洞报告](https://github.com/zqofnewbie/squirrel-kanban/security/advisories/new)。
+
 本项目采用 [MIT 许可证](LICENSE)，允许商用、修改和再分发，请保留版权与许可声明。
 第三方依赖和字体保留各自许可，见 [第三方说明](THIRD_PARTY_NOTICES.md)。
 

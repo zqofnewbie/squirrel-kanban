@@ -59,7 +59,7 @@ See [deployment guide](deployment.md). Do not run `down -v` on real data.
 - Slow/offline connection: loading, retry, preserved input, no false success.
 
 CI startup smoke covers Linux/macOS/Windows; this is not a substitute for native
-visual/gesture checks. `.github/workflows/ci.yml` runs on GitHub mirrors only.
+visual/gesture checks. `.github/workflows/ci.yml` runs on the GitHub repository; Gitee mirrors the source.
 For Gitee, run these commands in the project's chosen CI runner; no Gitee runner
 or external credential is configured by this repository.
 
