@@ -205,14 +205,14 @@ export default function ColumnView({
               <MenuItem
                 onClick={() => { close(); openColors() }}
               >
-                {t("设置列表颜色")} </MenuItem>
+                <Icon name="palette" size={16} />{t("设置列表颜色")} </MenuItem>
               <MenuItem
                 onClick={() => {
                   close()
                   setComposing(true)
                 }}
               >
-                {t("添加卡片")} </MenuItem>
+                <Icon name="plus" size={16} />{t("添加卡片")} </MenuItem>
               <MenuItem
                 onClick={() => {
                   close()
@@ -221,14 +221,14 @@ export default function ColumnView({
                   setRenaming(true)
                 }}
               >
-                {t("重命名列表")} </MenuItem>
+                <Icon name="edit" size={16} />{t("重命名列表")} </MenuItem>
               <MenuItem
                 onClick={() => {
                   close()
                   setWipOpen(true)
                 }}
               >
-                {t("设置上限")} </MenuItem>
+                <Icon name="settings" size={16} />{t("设置上限")} </MenuItem>
               <MenuSep />
               <MenuItem
                 danger
@@ -237,7 +237,7 @@ export default function ColumnView({
                   onClearColumn(col.id)
                 }}
               >
-                {t("归档全部卡片")} </MenuItem>
+                <Icon name="archive" size={16} />{t("归档全部卡片")} </MenuItem>
               <MenuItem
                 danger
                 onClick={() => {
@@ -245,7 +245,7 @@ export default function ColumnView({
                   onDeleteColumn(col.id)
                 }}
               >
-                {t("删除列表")} </MenuItem>
+                <Icon name="trash" size={16} />{t("删除列表")} </MenuItem>
             </>
           )}
         </Menu>

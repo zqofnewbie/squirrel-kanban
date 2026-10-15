@@ -1,6 +1,8 @@
 import type { SVGProps } from 'react'
 
 const paths = {
+  lock: <><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" /></>,
+  palette: <><path d="M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1-3.7 1.5 1.5 0 0 1 .8-2.8H17a4 4 0 0 0 4-4C21 6.4 17 3 12 3Z" /><path d="M7 10h.01M10 6.5h.01M15 7h.01M17 10.5h.01" strokeWidth="2.6" /></>,
   camera: <><path d="M4 7h4l2-3h4l2 3h4v13H4Z" /><circle cx="12" cy="13" r="4" /></>,
   fullscreen: <path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" />,
   fullscreenExit: <path d="M3 8h5V3m13 5h-5V3M8 21v-5H3m13 5v-5h5" />,

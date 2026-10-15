@@ -431,7 +431,7 @@ export function MenuItem({
       onClick={onClick}
       role="menuitem"
       className={cx(
-        'flex min-h-9 items-center gap-2 w-full rounded-lg px-3 py-2 text-left text-[13px] leading-5 [&>svg]:shrink-0',
+        'flex min-h-9 items-center gap-2 w-full rounded-lg px-3 py-2 text-left text-[13px] leading-5 [&>svg]:shrink-0 [&>svg]:h-4 [&>svg]:w-4',
         danger ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40' : 'hover:bg-black/[0.05] dark:hover:bg-white/[0.08]',
       )}
     >

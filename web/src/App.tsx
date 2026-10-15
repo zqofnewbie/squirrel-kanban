@@ -143,7 +143,7 @@ export default function App() {
         <button className="desktop-nav-toggle sidebar-edge-toggle" title={`${sidebarCollapsed ? t('展开侧栏') : t('折叠侧栏')} (${shortcut('B')})`} aria-label={sidebarCollapsed ? t('展开侧栏') : t('折叠侧栏')} aria-expanded={!sidebarCollapsed} onClick={toggleSidebar}><Icon name={sidebarCollapsed ? 'panelOpen' : 'panelClose'} size={14} /></button>
       <header className="app-header">
         <button className="mobile-nav-toggle" aria-label={t("打开导航")} onClick={() => setSidebarOpen(true)}><Icon name="menu" /></button>
-        <Menu className="header-workspace-menu" align="left" width={250} trigger={(_open, toggle) => <button className="workspace-switcher" aria-label={t("切换工作空间")} onClick={toggle}><span>{activeWorkspace ? workspaceName(activeWorkspace) : t("工作空间")}</span><Icon name="chevron" size={13} /></button>}>{close => <>{workspaces.map(item => <MenuItem key={item.id} onClick={() => { close(); void useStore.getState().switchWorkspace(item.id) }}><span className="truncate">{workspaceName(item)}</span>{item.id === workspaceId && <Icon name="check" size={14} />}</MenuItem>)}{<><MenuSep /><MenuItem onClick={() => { close(); useStore.getState().setPage('administration') }}><Icon name="settings" size={15} />{t(me.role === "member" ? "工作空间" : "管理空间与成员")}</MenuItem></>}</>}</Menu><span className="header-workspace">/</span>
+        <Menu className="header-workspace-menu" align="left" width={250} trigger={(_open, toggle) => <button className="workspace-switcher" aria-label={t("切换工作空间")} onClick={toggle}><span>{activeWorkspace ? workspaceName(activeWorkspace) : t("工作空间")}</span><Icon name="chevron" size={13} /></button>}>{close => <>{workspaces.map(item => <MenuItem key={item.id} onClick={() => { close(); void useStore.getState().switchWorkspace(item.id) }}><Icon name="board" size={16} /><span className="min-w-0 flex-1 truncate">{workspaceName(item)}</span>{item.id === workspaceId && <Icon name="check" size={14} />}</MenuItem>)}{<><MenuSep /><MenuItem onClick={() => { close(); useStore.getState().setPage('administration') }}><Icon name="settings" size={16} />{t(me.role === "member" ? "工作空间" : "管理空间与成员")}</MenuItem></>}</>}</Menu><span className="header-workspace">/</span>
 
         {page === 'administration' ? <span className="text-[14px] font-medium">{me.role !== 'member' ? t("空间与成员") : t("工作空间")}</span> : page === 'shares' ? <span className="text-[14px] font-medium">{t("分享管理")}</span> : <Menu
           className="header-board-menu"
@@ -172,10 +172,10 @@ export default function App() {
                     void openBoard(b.id)
                   }}
                 >
-                  <span className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: boardColor(b.id) }} />
-                    <span className="truncate">{b.name}</span>
-                    {b.id === board?.id && <span className="ml-auto opacity-45">{t("当前")}</span>}
+                  <span className="flex min-w-0 w-full items-center gap-2">
+                    <Icon name="board" size={16} className="shrink-0" style={{ color: boardColor(b.id) }} />
+                    <span className="min-w-0 flex-1 truncate">{b.name}</span>
+                    {b.id === board?.id && <span className="ml-auto shrink-0 opacity-45">{t("当前")}</span>}
                   </span>
                 </MenuItem>
               ))}
@@ -196,14 +196,14 @@ export default function App() {
                       setRenaming(true)
                     }}
                   >
-                    {t("重命名当前看板")} </MenuItem>
+                    <Icon name="edit" size={16} />{t("重命名当前看板")} </MenuItem>
                   <MenuItem
                     onClick={() => {
                       close()
                       setArchiveOpen(true)
                     }}
                   >
-                    {t("查看归档卡片")} </MenuItem>
+                    <Icon name="archive" size={16} />{t("查看归档卡片")} </MenuItem>
                   <MenuItem
                     danger
                     onClick={() => {
@@ -211,7 +211,7 @@ export default function App() {
                       setDelBoardOpen(true)
                     }}
                   >
-                    {t("删除当前看板")} </MenuItem>
+                    <Icon name="trash" size={16} />{t("删除当前看板")} </MenuItem>
                 </>
               )}
             </>
@@ -283,14 +283,14 @@ export default function App() {
                   </div>
                 </div>
                 <MenuSep />
-                <MenuItem onClick={() => { close(); setProfileOpen(true) }}>{t("账号设置")}</MenuItem>
+                <MenuItem onClick={() => { close(); setProfileOpen(true) }}><Icon name="settings" size={16} />{t("账号设置")}</MenuItem>
                 <MenuItem
                   onClick={() => {
                     close()
                     setPwdOpen(true)
                   }}
                 >
-                  {t("修改密码")} </MenuItem>
+                  <Icon name="lock" size={16} />{t("修改密码")} </MenuItem>
                 <MenuSep />
                 <MenuItem
                   danger
@@ -299,7 +299,7 @@ export default function App() {
                     void logout()
                   }}
                 >
-                  {t("退出登录")} </MenuItem>
+                  <Icon name="logout" size={16} />{t("退出登录")} </MenuItem>
               </>
             )}
           </Menu>
