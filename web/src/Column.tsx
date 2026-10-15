@@ -81,8 +81,8 @@ export default function ColumnView({
   useEffect(() => {
     if (composing) {
       inputRef.current?.focus()
-      // 输入框在列顶，确保它滚进视野
-      areaRef.current?.scrollTo({ top: 0 })
+      // 展示列表尾部；输入区始终位于卡片列表下方。
+      areaRef.current?.scrollTo({ top: areaRef.current.scrollHeight })
     }
   }, [composing])
 
@@ -95,6 +95,7 @@ export default function ColumnView({
       await onAddCard(col.id, v)
       setDraft('')
       setComposing(false)
+      requestAnimationFrame(() => areaRef.current?.scrollTo({ top: areaRef.current.scrollHeight }))
     } catch { /* 保留草稿，错误由全局提示展示 */ }
     finally { setBusy(false) }
   }
@@ -250,7 +251,31 @@ export default function ColumnView({
       </div>
       {nameError && <p role="alert" className="mb-2 text-xs text-red-600">{nameError}</p>}
 
-      {/* 新卡片的输入框固定出现在列顶部——新卡片也插到顶部，创建后立刻可见 */}
+
+      <div
+        ref={areaRef}
+        className="column-cards scroll-thin min-h-[24px] shrink overflow-y-auto rounded-xl bg-black/[0.035] p-2 dark:bg-white/[0.045]"
+      >
+        <SortableContext
+          items={cardIds}
+          strategy={verticalListSortingStrategy}
+        >
+          {col.cards.length >= 80 ? <VirtualCards cards={col.cards} scrollRef={areaRef} onOpen={onOpenCard} onRename={onRenameCard} /> : col.cards.map((c) => (
+            <CardTile
+              key={c.id}
+              card={c}
+              dimmed={dimmed.has(c.id)}
+              onOpen={onOpenCard}
+              onRename={onRenameCard}
+            />
+          ))}
+        </SortableContext>
+        {col.cards.length === 0 && !composing && (
+          <Empty compact text={t("这里还没有卡片")} />
+        )}
+      </div>
+
+      {/* 输入区固定在列表底部，与新增卡片的插入位置一致 */}
       {composing && (
         <div className="mb-2 shrink-0 rounded-lg border border-brand-400 bg-white p-2 shadow-card dark:bg-[#2A2A2E]">
           <textarea
@@ -288,29 +313,6 @@ export default function ColumnView({
           </div>
         </div>
       )}
-
-      <div
-        ref={areaRef}
-        className="column-cards scroll-thin min-h-[24px] shrink overflow-y-auto rounded-xl bg-black/[0.035] p-2 dark:bg-white/[0.045]"
-      >
-        <SortableContext
-          items={cardIds}
-          strategy={verticalListSortingStrategy}
-        >
-          {col.cards.length >= 80 ? <VirtualCards cards={col.cards} scrollRef={areaRef} onOpen={onOpenCard} onRename={onRenameCard} /> : col.cards.map((c) => (
-            <CardTile
-              key={c.id}
-              card={c}
-              dimmed={dimmed.has(c.id)}
-              onOpen={onOpenCard}
-              onRename={onRenameCard}
-            />
-          ))}
-        </SortableContext>
-        {col.cards.length === 0 && !composing && (
-          <Empty compact text={t("这里还没有卡片")} />
-        )}
-      </div>
 
       <ColumnScrollFooter target={areaRef}>
         {!composing && (
