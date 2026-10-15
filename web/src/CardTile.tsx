@@ -1,3 +1,4 @@
+import AutoTextarea from './AutoTextarea'
 import { focusElement, keyboardFocus } from './focus'
 import { cardTransition } from './boardDrag'
 import { api } from './api'
@@ -64,8 +65,6 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
       const el = ref.current
       el.focus()
       el.setSelectionRange(el.value.length, el.value.length)
-      el.style.height = 'auto'
-      el.style.height = Math.ceil(el.scrollHeight + el.offsetHeight - el.clientHeight) + 'px'
     }
   }, [editing])
 
@@ -141,7 +140,7 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
       )}
 
       {editing ? (
-        <textarea
+        <AutoTextarea
           ref={ref}
           aria-label={t("编辑卡片标题")}
           disabled={saving}
@@ -150,8 +149,6 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
           onPointerDown={(e) => e.stopPropagation()}
           onChange={(e) => {
             setDraft(e.target.value)
-            e.target.style.height = 'auto'
-            e.target.style.height = Math.ceil(e.target.scrollHeight + e.target.offsetHeight - e.target.clientHeight) + 'px'
           }}
           onBlur={()=>void commit()}
           onKeyDown={(e) => {

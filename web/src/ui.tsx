@@ -1,3 +1,4 @@
+import AutoTextarea from './AutoTextarea'
 import { focusElement, keyboardFocus } from './focus'
 import { useLanguage } from './useLanguage'
 import { t, locale } from './i18n'
@@ -42,7 +43,7 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
         ref={ref}
         {...props}
       className={cx(
-        'h-9 min-w-0 w-full rounded-lg border border-black/[0.12] bg-white px-3 text-[13px] outline-none',
+        'h-9 min-w-0 w-full leading-normal rounded-lg border border-black/[0.12] bg-white px-3 text-[13px] outline-none',
         'placeholder:text-black/30 focus:border-brand-400',
         'dark:border-white/[0.14] dark:bg-white/[0.06] dark:placeholder:text-white/30',
         props.className,
@@ -66,7 +67,7 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, Omit<React.Input
 export function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   useLanguage()
   return (
-    <textarea
+    <AutoTextarea
       {...props}
       className={cx(
         'w-full rounded-lg border border-black/[0.12] bg-white px-3 py-2 text-[13px] leading-relaxed outline-none resize-none',
@@ -105,8 +106,6 @@ export function InlineText({
       const el = ref.current
       el.focus()
       el.setSelectionRange(el.value.length, el.value.length)
-      el.style.height = 'auto'
-      el.style.height = el.scrollHeight + 'px'
     }
   }, [editing])
 
@@ -119,14 +118,12 @@ export function InlineText({
 
   if (editing) {
     return (
-      <textarea
+      <AutoTextarea
         ref={ref}
         value={draft}
         rows={multiline ? 3 : 1}
         onChange={(e) => {
           setDraft(e.target.value)
-          e.target.style.height = 'auto'
-          e.target.style.height = e.target.scrollHeight + 'px'
         }}
         onBlur={commit}
         onKeyDown={(e) => {

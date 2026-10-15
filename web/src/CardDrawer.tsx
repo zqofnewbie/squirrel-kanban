@@ -1,3 +1,4 @@
+import AutoTextarea from './AutoTextarea'
 import { Empty } from './ui'
 import { CardColumnSelect, CardCoverPicker, renderCardMarkdown } from './CardDetailControls'
 import { useLanguage } from './useLanguage'
@@ -10,7 +11,7 @@ import Icon from './Icon'
 import { createPortal } from 'react-dom'
 import CardComments from './CardComments'
 import { useDialogFocus } from './useDialogFocus'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from './api'
 import { useStore } from './store'
 import type { Activity, Card, Checklist, Label } from './types'
@@ -53,24 +54,6 @@ export default function CardDrawer() {
   useDialogFocus(panelRef, !!openId, () => requestClose())
   const fileRef = useRef<HTMLInputElement | null>(null)
   const titleRef = useRef<HTMLTextAreaElement>(null)
-
-  useLayoutEffect(() => {
-    const el = titleRef.current
-    if (!el) return
-    const resize = () => {
-      el.style.height = '0px'
-      el.style.height = `${el.scrollHeight + 2}px`
-    }
-    resize()
-    let width = el.clientWidth
-    const observer = new ResizeObserver(() => {
-      if (el.clientWidth === width) return
-      width = el.clientWidth
-      resize()
-    })
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [titleDraft, card?.id])
 
   useEffect(() => {
     if (!openId) {
@@ -211,7 +194,7 @@ export default function CardDrawer() {
         <fieldset disabled={busy || !openId} className="card-drawer-body scroll-thin min-h-0 min-w-0 flex-1 overflow-y-auto px-5 py-4">
           {failure && <p role="alert" className="mb-3 text-[12px] text-red-600">{failure}</p>}
           <p role="status" className="mb-3 min-h-[18px] text-[11px] text-[var(--muted)]">{busy ? t("正在保存…") : t("标签、封面和清单自动保存；日期和描述编辑后点击保存。")}</p>
-          <textarea
+          <AutoTextarea
             ref={titleRef}
             aria-label={t("卡片标题")}
             value={titleDraft}
@@ -228,8 +211,6 @@ export default function CardDrawer() {
               }
             }}
             className="mb-4 w-full resize-none rounded-lg border border-transparent bg-transparent px-2 py-1 text-[17px] font-medium leading-[1.5] outline-none hover:border-black/[0.1] focus:border-brand-400 dark:hover:border-white/[0.12]"
-            style={{ overflow: 'hidden' }}
-
           />
 
           {/* 标签 */}
@@ -319,7 +300,7 @@ export default function CardDrawer() {
           >
             {editingDesc ? (
               <div>
-                <textarea
+                <AutoTextarea
                   autoFocus
                   aria-label={t("卡片描述")}
                   value={desc}

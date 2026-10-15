@@ -1,3 +1,4 @@
+import AutoTextarea from './AutoTextarea'
 import { Empty } from './ui'
 import ColumnScrollFooter from './ColumnScrollFooter'
 import { useLanguage } from './useLanguage'
@@ -278,7 +279,7 @@ export default function ColumnView({
       {/* 输入区固定在列表底部，与新增卡片的插入位置一致 */}
       {composing && (
         <div className="mb-2 shrink-0 rounded-lg border border-brand-400 bg-white p-2 shadow-card dark:bg-[#2A2A2E]">
-          <textarea
+          <AutoTextarea
             ref={inputRef}
             disabled={busy}
             aria-label={t("添加卡片到{0}", [col.name])}

@@ -136,7 +136,7 @@ export default function SharedBoard({ shareId }: { shareId: string }) {
         </div>
         {permissions.cover && <div className="mb-5"><p className="mb-2 text-xs">{t("封面颜色")}</p><CardCoverPicker key={card.id} cover={card.cover || ''} busy={busy} onSave={async cover => !!(await mutate(()=>shareApi.edit(shareId,card.id,{cover})))}/></div>}
         {edit && permissions.edit ? <form className="mb-5" onSubmit={e => { e.preventDefault(); void mutate(async () => { await shareApi.edit(shareId, card.id, edit); setEdit(null) }) }}>
-          <label className="mb-2 block text-[12px]">{t("标题")}<Input className="mt-1" maxLength={250} required value={edit.title} onChange={e => setEdit({ ...edit, title: e.target.value })} /></label>
+          <label className="mb-2 block text-[12px]">{t("标题")}<Textarea rows={1} className="mt-1" maxLength={250} required value={edit.title} onChange={e => setEdit({ ...edit, title: e.target.value })} /></label>
           <label className="mb-2 block text-[12px]">{t("描述")}<Textarea className="mt-1" rows={6} maxLength={20000} value={edit.description} onChange={e => setEdit({ ...edit, description: e.target.value })} /></label>
           <label className="mb-3 block text-[12px]">{t("截止日期")}<Input className="mt-1" type="date" value={edit.due_date} onChange={e => setEdit({ ...edit, due_date: e.target.value })} /></label>
           <div className="flex justify-end gap-2"><Button disabled={busy} onClick={() => setEdit(null)}>{t("取消")}</Button><Button type="submit" variant="primary" disabled={busy || !edit.title.trim()}>{busy ? t("保存中…") : t("保存")}</Button></div>

@@ -907,3 +907,9 @@ html.canvas-fullscreen, .canvas-fullscreen body, .canvas-fullscreen #root { heig
 .card-tile.is-dragging:focus,
 .card-drag-preview .card-tile:focus,
 .column-drag-preview .card-tile:focus { outline: none !important; }
+
+/* Autosizing editors share a bounded height; only long content scrolls. */
+.auto-textarea { display:block; min-width:0; max-width:100%; max-height:min(40dvh, 320px); overflow-x:hidden; overflow-wrap:anywhere; scrollbar-width:thin; }
+.auto-textarea::-webkit-scrollbar { width:5px; }
+.auto-textarea::-webkit-scrollbar-thumb { background:color-mix(in srgb, var(--muted) 30%, transparent); border-radius:8px; }
+.auto-textarea::-webkit-scrollbar-button { display:none; width:0; height:0; }

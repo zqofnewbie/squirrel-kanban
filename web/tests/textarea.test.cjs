@@ -1,0 +1,5 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript')
+const code=ts.transpileModule(fs.readFileSync(require.resolve('../src/AutoTextarea.tsx'),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.ReactJSX}}).outputText
+const context={exports:{},require,getComputedStyle:el=>({boxSizing:'border-box',borderTopWidth:'1',borderBottomWidth:'1',maxHeight:el.limit,paddingTop:'2',paddingBottom:'2'})};vm.runInNewContext(code,context)
+test('short text includes borders without enabling scrolling',()=>{const el={style:{},scrollHeight:25,limit:'320px'};context.exports.resizeTextarea(el);assert.equal(el.style.height,'27px');assert.equal(el.style.overflowY,'hidden')})
+test('long text scrolls only at the height limit and shrinks after deletion',()=>{const el={style:{},scrollHeight:800,limit:'320px'};context.exports.resizeTextarea(el);assert.equal(el.style.height,'320px');assert.equal(el.style.overflowY,'auto');el.scrollHeight=50;context.exports.resizeTextarea(el);assert.equal(el.style.height,'52px');assert.equal(el.style.overflowY,'hidden')})
