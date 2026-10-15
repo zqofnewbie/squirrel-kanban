@@ -33,7 +33,7 @@ const context = {
     if (name === './focus') return { focusElement() {}, keyboardFocus: () => false }
     if (name === './useLanguage') return { useLanguage() {} }
     if (name === './i18n') return { t: (s) => s }
-    if (name === './Icon') return () => null
+    if (name === './Icon' || name === './MorphingIcon') return () => null
     if (name === './usePresence' || name === './useDialogFocus') return {}
     return require(name)
   },
@@ -113,7 +113,7 @@ function memberForm() {
             () => null,
           ]),
         )
-      if (name === './Icon') return () => null
+      if (name === './Icon' || name === './MorphingIcon') return () => null
       return require(name)
     },
   }

@@ -1,3 +1,4 @@
+import MorphingIcon from './MorphingIcon'
 import React, { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { focusElement, keyboardFocus } from './focus'
@@ -314,7 +315,7 @@ export function Select({
       width={240}
       matchTriggerWidth={fullWidth}
       className={classes(fullWidth && 'w-full', className)}
-      trigger={(_, toggle) => (
+      trigger={(open, toggle) => (
         <button
           type="button"
           disabled={disabled}
@@ -323,7 +324,7 @@ export function Select({
           className="select-trigger"
         >
           <span className="truncate">{selected?.label ?? t('选择列表')}</span>
-          <Icon name="chevron" size={14} />
+          <MorphingIcon name={open ? 'chevronUp' : 'chevronDown'} size={14} />
         </button>
       )}
     >

@@ -1,3 +1,4 @@
+import MorphingIcon from './MorphingIcon'
 import { focusElement } from './focus'
 import { createViewportAnchor } from './canvasViewport'
 import { useCanvasFullscreen } from './useCanvasFullscreen'
@@ -471,7 +472,7 @@ export default function BoardCanvas({
                 save('squirrel.minimap', minimap ? '0' : '1')
               }}
             >
-              <Icon name="minimap" size={17} />
+              <MorphingIcon name={minimap ? 'close' : 'minimap'} size={17} />
             </button>
           </ToolHint>
           <ToolHint
@@ -490,7 +491,7 @@ export default function BoardCanvas({
                 void fullscreen.toggle()
               }}
             >
-              <Icon name={fullscreen.active ? 'fullscreenExit' : 'fullscreen'} size={17} />
+              <MorphingIcon name={fullscreen.active ? 'fullscreenExit' : 'fullscreen'} size={17} />
             </button>
           </ToolHint>
         </div>

@@ -298,6 +298,7 @@ async function main() {
           );
         }
     }
+    await require("./morph-icons.cjs")({ browser, api: admin, base });
     await require("./drag-boundaries.cjs")({ browser, api: admin, base });
     assert.deepEqual(errors, []);
     console.log("PASS isolated release smoke");

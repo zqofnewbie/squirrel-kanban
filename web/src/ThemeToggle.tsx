@@ -1,9 +1,9 @@
+import MorphingIcon from './MorphingIcon'
 import { useLanguage } from './useLanguage'
 import { t } from './i18n'
 import { useState } from 'react'
 import { flushSync } from 'react-dom'
 import { useStore } from './store'
-import Icon from './Icon'
 
 export default function ThemeToggle() {
   useLanguage()
@@ -59,7 +59,7 @@ export default function ThemeToggle() {
       aria-label={t('切换主题')}
       className="theme-toggle"
     >
-      <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
+      <MorphingIcon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
     </button>
   )
 }

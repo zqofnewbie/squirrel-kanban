@@ -1,3 +1,4 @@
+import MorphingIcon from './MorphingIcon'
 import AutoTextarea, { type AutoTextareaProps } from './AutoTextarea'
 import { focusElement, keyboardFocus } from './focus'
 import { useLanguage } from './useLanguage'
@@ -80,7 +81,7 @@ export const PasswordInput = React.forwardRef<
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => setVisible((value) => !value)}
       >
-        <Icon name={visible ? 'eyeOff' : 'eye'} size={17} />
+        <MorphingIcon name={visible ? 'eyeOff' : 'eye'} size={17} />
       </button>
     </span>
   )

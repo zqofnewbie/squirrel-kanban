@@ -1,3 +1,4 @@
+import MorphingIcon from './MorphingIcon'
 import CaptureBoard from './CaptureBoard'
 import { shortcut, primaryKey } from './shortcuts'
 import { notify } from './notifications'
@@ -216,7 +217,7 @@ export default function App() {
           aria-expanded={!sidebarCollapsed}
           onClick={toggleSidebar}
         >
-          <Icon name={sidebarCollapsed ? 'panelOpen' : 'panelClose'} size={14} />
+          <MorphingIcon name={sidebarCollapsed ? 'panelOpen' : 'panelClose'} size={14} />
         </button>
         <header className="app-header">
           <button

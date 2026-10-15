@@ -10,6 +10,9 @@ licenses. MIT does not replace the licenses of dependencies, fonts or containers
   [generation record](docs/logo-prompt.md). No third-party mascot trademark is claimed.
 - **Icons and preset backgrounds**: maintained in the project source. New external
   assets must include their origin and license before being accepted.
+- **Morphicons 1.7.1**: MIT, by Guillermo López. Used only for state-changing UI icons;
+  [upstream source](https://github.com/guillermolg00/morphicons). Existing project paths
+  are reused without an additional icon catalog. Full license is in the inventory below.
 - **JavaScript and Go dependencies**: see [dependency license texts](docs/dependency-licenses.txt),
   generated from installed packages and the Go module cache. Lockfiles identify
   exact versions. Regenerate notices when dependencies change.
