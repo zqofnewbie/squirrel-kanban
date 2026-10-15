@@ -1769,36 +1769,50 @@ a {
   color: color-mix(in srgb, var(--ink) 80%, var(--label-color));
 }
 
-/* Layer lifetime and motion are shared across dialogs, menus and previews. */
+/* Native transitions reverse from the current frame when a layer is reopened.
+   Animate only opacity/transform; lifetime is retained by usePresence. */
+.motion-panel,
+.motion-layer > .pop,
+.motion-layer > .slide-in,
+.motion-layer > .fade-in {
+  --layer-offset: translateY(6px) scale(0.98);
+  opacity: 1;
+  transform: none;
+  animation: none;
+  transition:
+    opacity 180ms ease,
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.motion-layer > .slide-in,
+.motion-layer.modal-drawer > [role='dialog'] {
+  --layer-offset: translateX(32px);
+}
+.motion-layer > .fade-in {
+  --layer-offset: none;
+}
 .motion-layer[data-motion='exit'],
 .motion-panel[data-motion='exit'] {
   pointer-events: none;
 }
-.motion-layer[data-motion='exit'] .fade-in {
-  animation: layer-fade-out 180ms ease forwards;
+.motion-panel[data-motion='exit'],
+.motion-layer[data-motion='exit'] > .pop,
+.motion-layer[data-motion='exit'] > .slide-in,
+.motion-layer[data-motion='exit'] > .fade-in {
+  opacity: 0;
+  transform: var(--layer-offset);
 }
-.motion-layer[data-motion='exit'] .pop,
-.motion-panel[data-motion='exit'] {
-  animation: layer-pop-out 180ms ease forwards;
-}
-.motion-layer[data-motion='exit'] .slide-in {
-  animation: drawer-out 180ms ease forwards;
+@starting-style {
+  .motion-panel,
+  .motion-layer > .pop,
+  .motion-layer > .slide-in,
+  .motion-layer > .fade-in {
+    opacity: 0;
+    transform: var(--layer-offset);
+  }
 }
 @keyframes layer-fade-out {
   to {
     opacity: 0;
-  }
-}
-@keyframes layer-pop-out {
-  to {
-    opacity: 0;
-    transform: translateY(6px) scale(0.98);
-  }
-}
-@keyframes drawer-out {
-  to {
-    opacity: 0;
-    transform: translateX(32px);
   }
 }
 .select-trigger,
@@ -2456,13 +2470,6 @@ html {
 }
 .virtual-card-row .card-tile {
   margin-bottom: 0;
-}
-.canvas-minimap[data-motion='enter'] {
-  animation: kanban-pop 0.16s ease both;
-}
-.canvas-minimap[data-motion='exit'] {
-  animation: layer-pop-out 0.18s ease both;
-  pointer-events: none;
 }
 .shared-columns .kanban-column {
   display: flex;
@@ -3475,20 +3482,6 @@ html[lang='en-US'] .sidebar-search > span {
   max-height: 100dvh;
   width: min(100vw, 560px);
   border-radius: 16px 0 0 16px;
-  animation: shared-drawer-in 0.24s ease-out;
-}
-@keyframes shared-drawer-in {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .modal-drawer > [role='dialog'] {
-    animation: none;
-  }
 }
 .global-notices {
   position: fixed;

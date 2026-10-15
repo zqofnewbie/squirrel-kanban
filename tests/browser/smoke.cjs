@@ -1,5 +1,6 @@
 // Optional browser regression: starts its own server and disposable data directory.
 // Never accepts a production URL or touches development data.
+const motion = require("./layer-motion.cjs");
 const { chromium, request } = require("playwright");
 const assert = require("node:assert/strict");
 const { spawn } = require("node:child_process");
@@ -223,10 +224,19 @@ async function main() {
             await menu.isVisible(),
             "menu closes while pointer enters it",
           );
+          await motion.arm(menu);
           await page.keyboard.press("Escape");
+          await motion.check(page);
           await menu.waitFor({ state: "hidden" });
           await page.locator('[aria-keyshortcuts="F"]').click();
           await page.waitForFunction(() => !!document.fullscreenElement);
+          await page.locator(".card-tile").first().click();
+          await page.getByRole("dialog").waitFor();
+          await sleep(220);
+          await motion.arm(page.getByRole("dialog"));
+          await page.keyboard.press("Escape");
+          await motion.check(page, true);
+          await page.locator('[role="dialog"]').waitFor({ state: "detached" });
           await page.locator(".card-tile").first().click();
           await page.getByRole("dialog").waitFor();
           if (role === "share") {
@@ -291,6 +301,28 @@ async function main() {
                 .count(),
               role === "member" ? 0 : 1,
             );
+            if (role !== "member") {
+              await page
+                .getByRole("tab", { name: /成员与权限|People & permissions/ })
+                .click();
+              await page
+                .getByRole("button", { name: /^(添加成员|Add member)$/ })
+                .click();
+              const dialog = page.getByRole("dialog");
+              await dialog.waitFor();
+              await sleep(220);
+              await motion.arm(dialog);
+              await page.keyboard.press("Escape");
+              await motion.check(page);
+              assert.equal(
+                await page.locator(".modal-footer").count(),
+                1,
+                "footer must survive exit",
+              );
+              await page
+                .locator('[role="dialog"]')
+                .waitFor({ state: "detached" });
+            }
           }
           await page.close();
           console.log(

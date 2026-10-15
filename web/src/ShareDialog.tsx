@@ -1,3 +1,4 @@
+import { EXIT_RETENTION_MS } from './usePresence'
 import { notify } from './notifications'
 import { useLanguage } from './useLanguage'
 import { t } from './i18n'
@@ -103,7 +104,7 @@ export default function ShareDialog({
   const [visible, setVisible] = useState(true)
   useEffect(() => {
     if (visible) return
-    const timer = window.setTimeout(onClose, 180)
+    const timer = window.setTimeout(onClose, EXIT_RETENTION_MS)
     return () => window.clearTimeout(timer)
   }, [visible, onClose])
   const finishClose = () => setVisible(false)

@@ -361,9 +361,11 @@ export function Modal({
   const titleId = useId()
   const presence = usePresence(open)
   const content = useRef(children)
+  const lastFooter = useRef(footer)
   const lastTitle = useRef(title)
   if (open) {
     content.current = children
+    lastFooter.current = footer
     lastTitle.current = title
   }
   useDialogFocus(panelRef, open, onClose)
@@ -406,9 +408,9 @@ export function Modal({
         <div className="modal-body scroll-thin min-h-0 flex-1 overflow-y-auto p-5">
           {open ? children : content.current}
         </div>
-        {footer && (
+        {(open ? footer : lastFooter.current) && (
           <div className="modal-footer shrink-0 border-t border-[var(--line)] px-5 py-3">
-            {footer}
+            {open ? footer : lastFooter.current}
           </div>
         )}
       </div>

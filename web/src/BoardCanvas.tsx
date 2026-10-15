@@ -655,7 +655,7 @@ function CanvasMinimap({
   if (!presence.mounted) return null
   return (
     <div
-      className="canvas-minimap"
+      className="canvas-minimap motion-panel"
       data-motion={presence.phase}
       aria-label={t('看板缩略图')}
       aria-hidden={!open || undefined}
