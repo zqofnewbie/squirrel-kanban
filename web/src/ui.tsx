@@ -323,7 +323,7 @@ export function Menu({ trigger, children, align = 'right', width = 200, matchTri
   align?: 'left' | 'right'
   width?: number
   matchTriggerWidth?: boolean
-  placement?: 'bottom' | 'top-end'
+  placement?: 'bottom' | 'top-end' | 'right-start'
   openOnHover?: boolean
 }) {
   useLanguage()
@@ -349,8 +349,9 @@ export function Menu({ trigger, children, align = 'right', width = 200, matchTri
       if (!anchor) return
       const size = Math.min(matchTriggerWidth ? anchor.width : width, window.innerWidth - 16)
       const height = menu.current?.offsetHeight ?? 0
-      const left = Math.max(8, Math.min(window.innerWidth - size - 8, align === 'left' ? anchor.left : anchor.right - size))
-      const top = placement === 'top-end' && anchor.top > height + 8 ? anchor.top - height - 6 : anchor.bottom + height + 8 > window.innerHeight && anchor.top > height + 8 ? anchor.top - height - 6 : Math.max(8, Math.min(anchor.bottom + 6, window.innerHeight - height - 8))
+      const sideLeft = anchor.right + size + 14 <= window.innerWidth ? anchor.right + 6 : anchor.left - size - 6
+      const left = Math.max(8, Math.min(window.innerWidth - size - 8, placement === 'right-start' ? sideLeft : align === 'left' ? anchor.left : anchor.right - size))
+      const top = placement === 'right-start' ? Math.max(8, Math.min(anchor.top, window.innerHeight - height - 8)) : placement === 'top-end' && anchor.top > height + 8 ? anchor.top - height - 6 : anchor.bottom + height + 8 > window.innerHeight && anchor.top > height + 8 ? anchor.top - height - 6 : Math.max(8, Math.min(anchor.bottom + 6, window.innerHeight - height - 8))
       setPosition({ left, top, width: size, ready: true })
     }
     place()
@@ -378,8 +379,11 @@ export function Menu({ trigger, children, align = 'right', width = 200, matchTri
       const inside = (r: DOMRect) => event.clientX >= r.left && event.clientX <= r.right && event.clientY >= r.top && event.clientY <= r.bottom
       const gapTop = b.bottom <= a.top ? b.bottom : a.bottom
       const gapBottom = b.bottom <= a.top ? a.top : b.top
+      const sideGapLeft = b.left >= a.right ? a.right : b.right
+      const sideGapRight = b.left >= a.right ? b.left : a.left
+      const sideBridge = event.clientX >= sideGapLeft && event.clientX <= sideGapRight && event.clientY >= Math.min(a.top,b.top) && event.clientY <= Math.max(a.bottom,b.bottom)
       const bridge = event.clientX >= Math.min(a.left, b.left) && event.clientX <= Math.max(a.right, b.right) && event.clientY >= gapTop && event.clientY <= gapBottom
-      if (inside(a) || inside(b) || bridge) clearHover()
+      if (inside(a) || inside(b) || bridge || sideBridge) clearHover()
       else if (!hoverTimer.current) hoverLeave()
     }
     const observer = new ResizeObserver(place)
