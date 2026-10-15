@@ -14,7 +14,7 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import type { Card } from './types'
-import { cx, dueState, formatDate, Progress, Menu, MenuItem } from './ui'
+import { cx, dueState, formatDate, Progress, Menu, MenuItem, MenuSep, Modal, Select, ConfirmDialog } from './ui'
 
 interface Props {
   card: Card
@@ -26,13 +26,23 @@ interface Props {
   canPin?: boolean
   canMove?: boolean
   onPin?: (id:number, pinned:boolean) => Promise<void>
+  moveColumns?: {id:number;name:string;color?:string}[]
+  onMove?: (id:number,columnId:number)=>Promise<void>
   overlay?: boolean
 }
 
-function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId, canEdit = true, canPin = true, canMove = true, onPin, sortable }: Props & { sortable?: ReturnType<typeof useSortable> }) {
+function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId, canEdit = true, canPin = true, canMove = true, onPin, moveColumns, onMove, sortable }: Props & { sortable?: ReturnType<typeof useSortable> }) {
   useLanguage()
   const scale = useContext(BoardScale)
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = sortable ?? {}
+  const [moveOpen, setMoveOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [actionBusy, setActionBusy] = useState(false)
+  const [columns, setColumns] = useState<{id:number;name:string;color?:string}[]>([])
+  const runAction = async (action:()=>Promise<void>) => {
+    setActionBusy(true); setError('')
+    try { await action() } catch (e:any) { setError(e.message || t('保存失败，请重试')) } finally { setActionBusy(false) }
+  }
   const [pinBusy, setPinBusy] = useState(false)
   async function togglePin() {
     setPinBusy(true); setError('')
@@ -167,11 +177,16 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
       ) : (
         <div className="card-title-row">
           <div className="card-title break-words text-[13px] leading-[1.55]">{card.title}</div>
-          {(canPin || canEdit) && <div className="card-actions" aria-hidden={overlay || undefined} onPointerDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
-            {!overlay && <Menu openOnHover width={210} trigger={(open, toggle) => <button type="button" className="card-more" aria-label={t("卡片操作")} onClick={toggle}><span style={{ display:'flex', transform:'rotate(90deg)' }}><Icon name="more" size={16} /></span></button>}>
+          {<div className="card-actions" aria-hidden={overlay || undefined} onPointerDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()} onKeyDown={e => e.stopPropagation()}>
+            {!overlay && <Menu openOnHover placement="top-end" width={210} trigger={(open, toggle) => <button type="button" className="card-more" disabled={actionBusy || pinBusy} aria-label={t("卡片操作")} onClick={toggle}><span style={{ display:'flex', transform:'rotate(90deg)' }}><Icon name="more" size={16} /></span></button>}>
               {close => <>
+                <MenuItem onClick={() => { close(); onOpen(card.id) }}>{t("卡片详情")}</MenuItem>
+                {canMove && <MenuItem onClick={() => { close(); setColumns(moveColumns ?? useStore.getState().board?.columns ?? []); setMoveOpen(true) }}>{t("移动卡片")}</MenuItem>}
                 {canPin && <MenuItem onClick={() => { close(); if (!pinBusy) void togglePin() }}><Icon name="pin" size={14} />{t(card.pinned ? "取消固定" : "固定到列表顶部")}</MenuItem>}
                 {canEdit && <MenuItem onClick={() => { close(); startEdit() }}><Icon name="edit" size={15} />{t("编辑标题")}</MenuItem>}
+                <MenuItem onClick={() => { close(); onOpen(card.id, 'comments') }}>{t("评论")}</MenuItem>
+                {!!card.attachment_count && <MenuItem onClick={() => { close(); onOpen(card.id, 'attachments') }}>{t("附件")}</MenuItem>}
+                {!shareId && <><MenuSep /><MenuItem onClick={() => { close(); void runAction(async () => { useStore.getState().updateCardLocal(await api.updateCard(card.id, {archived:true})) }) }}>{t("归档")}</MenuItem><MenuItem danger onClick={() => { close(); setDeleteOpen(true) }}>{t("删除卡片")}</MenuItem></>}
               </>}
             </Menu>}
 
@@ -179,6 +194,12 @@ function CardTileBase({ card, dimmed, onOpen, onRename, overlay = false, shareId
         </div>
       )}
 
+      {!overlay && <div onClick={e=>e.stopPropagation()} onPointerDown={e=>e.stopPropagation()} onKeyDown={e=>e.stopPropagation()}>
+        <Modal open={moveOpen} title={t("移动卡片")} onClose={()=>setMoveOpen(false)}>
+          <Select fullWidth label={t("移动到列表")} value={card.column_id} disabled={actionBusy} options={columns.map(c=>({value:c.id,label:c.name,color:c.color}))} onChange={columnId=>runAction(async()=>{ if(onMove) await onMove(card.id,columnId); else { await api.moveCard(card.id,columnId,0); await useStore.getState().reloadBoard() } setMoveOpen(false) })}/>
+        </Modal>
+        <ConfirmDialog open={deleteOpen} danger title={t("删除卡片")} okText={t("删除卡片")} message={t("删除「{0}」及其清单、评论、附件？此操作不可恢复。",[card.title])} onClose={()=>setDeleteOpen(false)} onOK={async()=>{await api.deleteCard(card.id);useStore.getState().removeCardLocal(card.id)}}/>
+      </div>}
       {error && <p role="alert" className="mt-1 text-xs text-red-600">{error}</p>}
       {!editing && card.description.trim() && <p className="card-description">{card.description.replace(/!?(\[[^\]]*\])\([^)]*\)/g,'$1').replace(/[#*`_>\[\]]/g,'').trim()}</p>}
       {(card.checklist_total > 0 || card.due_date || card.attachment_count > 0 || card.comment_count > 0) && (

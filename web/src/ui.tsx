@@ -316,13 +316,14 @@ export function Modal({
 
 // ---------- 下拉菜单 ----------
 
-export function Menu({ trigger, children, align = 'right', width = 200, matchTriggerWidth = false, className, openOnHover = false }: {
+export function Menu({ trigger, children, align = 'right', width = 200, matchTriggerWidth = false, className, openOnHover = false, placement = 'bottom' }: {
   className?: string
   trigger: (open: boolean, toggle: () => void) => React.ReactNode
   children: (close: () => void) => React.ReactNode
   align?: 'left' | 'right'
   width?: number
   matchTriggerWidth?: boolean
+  placement?: 'bottom' | 'top-end'
   openOnHover?: boolean
 }) {
   useLanguage()
@@ -349,7 +350,7 @@ export function Menu({ trigger, children, align = 'right', width = 200, matchTri
       const size = Math.min(matchTriggerWidth ? anchor.width : width, window.innerWidth - 16)
       const height = menu.current?.offsetHeight ?? 0
       const left = Math.max(8, Math.min(window.innerWidth - size - 8, align === 'left' ? anchor.left : anchor.right - size))
-      const top = anchor.bottom + height + 8 > window.innerHeight && anchor.top > height + 8 ? anchor.top - height - 6 : Math.max(8, Math.min(anchor.bottom + 6, window.innerHeight - height - 8))
+      const top = placement === 'top-end' && anchor.top > height + 8 ? anchor.top - height - 6 : anchor.bottom + height + 8 > window.innerHeight && anchor.top > height + 8 ? anchor.top - height - 6 : Math.max(8, Math.min(anchor.bottom + 6, window.innerHeight - height - 8))
       setPosition({ left, top, width: size, ready: true })
     }
     place()
@@ -374,7 +375,7 @@ export function Menu({ trigger, children, align = 'right', width = 200, matchTri
     window.addEventListener('resize', place)
     window.addEventListener('scroll', place, true)
     return () => { document.removeEventListener('pointerdown', onDown); window.removeEventListener('keydown', onKey, true); window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true) }
-  }, [open, align, width, matchTriggerWidth])
+  }, [open, align, width, matchTriggerWidth, placement])
   useEffect(() => {
     if (!open || !position.ready || hoverOpened.current) return
     const input = menu.current?.querySelector<HTMLInputElement>('input, textarea')

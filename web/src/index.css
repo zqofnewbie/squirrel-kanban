@@ -365,7 +365,7 @@ button, a { touch-action: manipulation; }
 .dark .card-tile:hover { border-color: #627086; }
 .card-edit { top: 7px; right: 7px; z-index: 1; width: 24px; height: 24px; border: 0; background: transparent; border-radius: 5px; }
 .card-edit:hover { background: var(--surface-hover); color: var(--accent); }
-.card-title { min-width:0; padding-right:0; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
+.card-title { min-width:0; padding-right:0; white-space:pre-wrap; overflow-wrap:anywhere; }
 .card-tile.has-cover { padding-top: 51px; }
 .card-cover { position: absolute; inset: 0 0 auto; height: 38px; border-radius: 7px 7px 0 0; pointer-events: none; }
 .card-description { margin-top: 6px; color: var(--muted); font-size: 12px; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
