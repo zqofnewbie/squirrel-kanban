@@ -16,6 +16,7 @@ const windows = process.platform === 'win32'
 test('defaults, custom ports and data paths match on macOS and Windows', () => {
   assert.deepEqual(readConfig({}, '/project', 'darwin'), { apiPort: 8090, webPort: 5173, data: '/project/.dev' })
   assert.deepEqual(readConfig({}, 'C:\\project', 'win32'), { apiPort: 8090, webPort: 5173, data: 'C:\\project\\.dev' })
+  assert.deepEqual(readConfig({}, '/project', 'linux'), { apiPort: 8090, webPort: 5173, data: '/project/.dev' })
   assert.equal(readConfig({ DEV_DATA_DIR: 'test data', API_PORT: '9090', WEB_PORT: '5174' }, '/project', 'darwin').data, '/project/test data')
   assert.equal(readConfig({ dev_data_dir: 'D:\\test data', api_port: '9090', web_port: '5174' }, 'C:\\project', 'win32').data, 'D:\\test data')
   for (const invalid of ['0', '65536', '-1', '5173;echo bad', '1.5', ' 8090']) {

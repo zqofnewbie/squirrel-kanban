@@ -20,7 +20,8 @@ export function readConfig(env, projectRoot, platform = process.platform) {
   const apiPort = port('API_PORT', 8090)
   const webPort = port('WEB_PORT', 5173)
   if (apiPort === webPort) throw new Error('API_PORT 与 WEB_PORT 不能相同。')
-  const paths = platform === 'win32' ? path.win32 : path
+  // Explicit semantics also keep cross-platform config checks independent of the host OS.
+  const paths = platform === 'win32' ? path.win32 : path.posix
   return { apiPort, webPort, data: paths.resolve(projectRoot, value('DEV_DATA_DIR') || '.dev') }
 }
 
